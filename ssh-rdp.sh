@@ -238,7 +238,7 @@ deps_or_exit(){
 	done
 	for d in $DEPS_OPT_L ; do
 		if ! which $d &>/dev/null ; then
-			echo "[WW] Cannot find required optional executable:" $d
+			echo "[!!] Cannot find required optional executable:" $d
 		fi
 	done
 
@@ -326,14 +326,6 @@ fi
 echo "[..] Checking required executables"
 deps_or_exit
 
-exit
-
-echo
-echo "[..] Trying to connect to $RUSER@$RHOST:$RPORT"
-echo "     and stream display $DISPLAY"
-echo "     with size $RES and offset: $OFFSET"
-echo
-
 generate_ICFILE_from_names
 
 #netevent script file
@@ -359,11 +351,17 @@ if [ "$VIDEO_BITRATE_MAX" = "AUTO" ] ; then
     fi
     echo "[!!] Using $VIDEO_BITRATE_MAX"Kbps
     echo  
-    exit
 fi
 
 setup_input_loop &
 PID1=$!
+
+echo
+echo "[..] Trying to connect to $RUSER@$RHOST:$RPORT"
+echo "     and stream display $DISPLAY"
+echo "     with size $RES and offset: $OFFSET"
+echo
+
 
 #Guess audio capture device?
     if [ "$AUDIO_CAPTURE_SOURCE" = "guess" ] ; then
