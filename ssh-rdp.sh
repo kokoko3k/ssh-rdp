@@ -1,8 +1,8 @@
 #!/bin/bash
 
-#ToDo: Remote window title is wrong
-#	multiplexing
-#	custom cipher
+#ToDo: 
+#	Remote window title is wrong
+#	Check deps
 
 #Requirements:
     #Local+Remote: ffmpeg,?????????????????,openssh,netevent-git
