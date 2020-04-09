@@ -1,11 +1,15 @@
 #!/bin/bash
 
-#ToDo: 
+#ToDo:
 #	Remote window title is wrong
 #	Remote audio: delay is still a bit high (less than 100ms)
 #	Remote audio: it is possible to sort aut pulseaudio shortcomings by playing an audio
 #	But ffplay seems to hangs at exit; need to try other ways to either kill it or understand
 #	Why pulse acts this way,
+#
+#	clear links in /tmp on remote
+#
+#	better commandline parameters handling (use named options)
 
 #Requirements:
     #Local+Remote: ffmpeg,?????????????????,openssh,netevent-git
@@ -26,7 +30,7 @@
 
     #GRAB_HOTKEY="" # Grab/Ungrab devices 70=scroll_lock (commented because it is read from a file)
     #FULLSCREENSWITCH_HOTKEY="" # Switch fullscreen (commented because it is read from a file)
-    
+
 #Encoding:
     AUDIO_CAPTURE_SOURCE="guess" # "pulseaudio name like alsa_output.pci-0000_00_1b.0.analog-stereo.monitor" or "guess"
     FPS=60         # frames per second of the stream
@@ -54,16 +58,19 @@
 
     #Remote window title
     WTITLE="$RUSER@$RHOST""$RDISPLAY"
-    
+
 # Decoding
     #ffplay, low latency, no hardware decoding
     #VIDEOPLAYER="ffplay - -nostats -window_title "$WTITLE" -probesize 32 -flags low_delay -framedrop  -fflags nobuffer+fastseek+flush_packets -analyzeduration 0 -sync ext"
+
     #mpv, less latency, possibly hardware decoding, hammers the cpu.
     VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=auto --title="$WTITLE" --untimed --no-cache --profile=low-latency --opengl-glfinish=yes --opengl-swapinterval=0"
+    	#older mpv versions, vaapi
+    	#VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=vaapi --vo=opengl --title="$WTITLE" --untimed --no-cache --audio-buffer=0  --vd-lavc-threads=1 --cache-pause=no --demuxer-lavf-o=fflags=+nobuffer --demuxer-lavf-analyzeduration=0.1 --video-sync=audio --interpolation=no  --opengl-glfinish=yes --opengl-swapinterval=0"
 
     AUDIOPLAYER="ffplay - -nostats -loglevel warning -flags low_delay -nodisp -probesize 32 -fflags nobuffer+fastseek+flush_packets -analyzeduration 0 -sync ext -af aresample=async=1:min_comp=0.1:first_pts=$AUDIO_DELAY_COMPENSATION"
     #AUDIOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-default-bindings=no --untimed --no-cache --profile=low-latency --speed=1.01"
-    
+
 # Misc
     SSH_CIPHER="" #Optionally, force an ssh cipher to be used
     #SSH_CIPHER="aes256-gcm@openssh.com"
