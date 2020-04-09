@@ -38,6 +38,7 @@
                                     #Setting this too high will likely produce crackling sound.
                                     #Try in range 0-9000
     VIDEO_BITRATE_MAX="5000"  #kbps (or AUTO)
+    VIDEO_BITRATE_MAX_SCALE="80" # When VIDEO_BITRATE_MAX is set to "AUTO", only use this percentual of it.
 
     #cpu encoder
     VIDEO_ENC="-threads 1 -vcodec libx264 -thread_type slice -slices 1 -level 32 -preset ultrafast -tune zerolatency -intra-refresh 1 -x264opts vbv-bufsize=1:slice-max-size=1500:keyint=$FPS:sliced_threads=1"
@@ -175,11 +176,7 @@ trap finish INT TERM EXIT
 #Test and report net download speed
 benchmark_net() {
     $SSH_EXEC sh -c '"timeout 1 dd if=/dev/zero  bs=1b "' | cat - > /tmp/zero
-    #KBPS=$(( $(wc -c < /tmp/zero) *8/1000   ))  # 100%
-    #KBPS=$(( $(wc -c < /tmp/zero) *8/1200   ))  # 80%
-    KBPS=$(( $(wc -c < /tmp/zero) *8/2000   ))  # 50%
-    #KBPS=$(( $(wc -c < /tmp/zero) *8/3000   ))  # 33%
-    #KBPS=$(( $(wc -c < /tmp/zero) *8/10000   )) # 10%
+    KBPS=$(( $(wc -c < /tmp/zero) *8/1000   ))
     echo $KBPS
 }
 
@@ -236,6 +233,7 @@ fi
 if [ ! $1 = "" ] ; then
     #read user and host and override defaults if specified by command line
     read RUSER RHOST RPORT_R RDISPLAY_R RES_R OFFSET_R FPS_R AUDIO_BITRATE_R VIDEO_BITRATE_MAX_R <<< $(echo "$1" | awk -F [@:] '{print $1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9}')
+       
     [ "$RPORT_R" != "" ]    && RPORT=$RPORT_R
     [ "$RDISPLAY_R" != "" ] && RDISPLAY=$RDISPLAY_R
     [ "$RES_R" != "" ]      && RES=$RES_R
@@ -308,21 +306,25 @@ SSH_CONTROL_PATH=$HOME/.config/ssh-rdp$$
     FFPLAYEXE=/tmp/ffplay$$
     $SSH_EXEC "ln -s \$(which ffplay) $FFPLAYEXE"
 
-setup_input_loop &
-
-PID1=$!
-
 #Measure network download speed?
 if [ "$VIDEO_BITRATE_MAX" = "AUTO" ] ; then
-    echo "[..] Measuring network throughput"
+	echo
+    echo "[..] Measuring network throughput..."
     VIDEO_BITRATE_MAX=$(benchmark_net)
-    if [ $VIDEO_BITRATE_MAX -gt 294987 ] ; then
-        echo $VIDEO_BITRATE_MAX too high!
+    echo "[OK] VIDEO_BITRATE_MAX = "$VIDEO_BITRATE_MAX"Kbps"
+  	VIDEO_BITRATE_MAX=$(( "$VIDEO_BITRATE_MAX" * "$VIDEO_BITRATE_MAX_SCALE" / 100 ))
+  	echo "[OK] Scaled Throughput ("$VIDEO_BITRATE_MAX_SCALE"%) = "$VIDEO_BITRATE_MAX"Kbps"
+     if [ $VIDEO_BITRATE_MAX -gt 294987 ] ; then
+        echo [!!] $VIDEO_BITRATE_MAX"Kbps" is too high!
         VIDEO_BITRATE_MAX=100000 
     fi
-    echo Using "[OK] $VIDEO_BITRATE_MAX"Kbps
-    echo
+    echo "[!!] Using $VIDEO_BITRATE_MAX"Kbps
+    echo  
+    exit
 fi
+
+setup_input_loop &
+PID1=$!
 
 #Guess audio capture device?
     if [ "$AUDIO_CAPTURE_SOURCE" = "guess" ] ; then
