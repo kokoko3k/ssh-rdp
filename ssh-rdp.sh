@@ -175,7 +175,7 @@ trap finish INT TERM EXIT
 
 #Test and report net download speed
 benchmark_net() {
-    $SSH_EXEC sh -c '"timeout 1 dd if=/dev/zero  bs=1b "' | cat - > /tmp/zero
+    $SSH_EXEC sh -c '"timeout 1 dd if=/dev/zero bs=1b "' | cat - > /tmp/zero
     KBPS=$(( $(wc -c < /tmp/zero) *8/1000   ))
     echo $KBPS
 }
@@ -191,7 +191,6 @@ setup_input_loop() {
     for DEVICE in $(<$ICFILE_RUNTIME) ; do
         echo "     forward input from device $DEVICE..."
         DEVNAME=$(name_from_event "$DEVICE")
-        #if [[ $DEVICE == *"event-kbd"* ]] ; then
         if  [ "$DEVNAME" = "$KBDNAME" ] ; then 
             echo "device add mykbd$i /dev/input/$DEVICE"  >>$NESCRIPT
 			echo "hotkey add mykbd$i key:$GRAB_HOTKEY:1 grab toggle" >>$NESCRIPT
@@ -222,6 +221,43 @@ setup_input_loop() {
         fi
     done
 }
+
+deps_or_exit(){
+	#Check that dependancies are ok, or exits the script
+	ERROR=0
+	DEPS_L="bash grep head cut timeout sleep tee inotifywait netevent wc wmctrl awk basename ssh ffplay ["
+	DEPS_OPT_L="mpv"
+	DEPS_R="bash timeout dd ffmpeg pacmd grep awk tail xdpyinfo"
+
+	#Local deps
+	for d in $DEPS_L ; do
+		if ! which $d &>/dev/null ; then
+			echo "[EE] Cannot find required local executable:" $d
+			ERROR=1
+		fi
+	done
+	for d in $DEPS_OPT_L ; do
+		if ! which $d &>/dev/null ; then
+			echo "[WW] Cannot find required optional executable:" $d
+		fi
+	done
+
+	#Remote deps
+	for d in $DEPS_R ; do
+		if ! $SSH_EXEC "which $d &>/dev/null" ; then
+			echo "[EE] Cannot find required remote executable:" $d
+			ERROR=1
+		fi
+	done
+	
+	if [ "$ERROR" = "1" ] ; then
+		echo "[EE] Missing packages, cannot continue."
+		exit
+	fi
+		
+}
+
+
 
 # ### MAIN ### ### MAIN ### ### MAIN ### ### MAIN ###
 
@@ -279,6 +315,19 @@ fi
         create_input_files
     fi
 
+#Setup SSH Multiplexing
+	SSH_CONTROL_PATH=$HOME/.config/ssh-rdp$$
+    ssh -fN -o ControlMaster=auto -o ControlPath=$SSH_CONTROL_PATH -o ControlPersist=300 $RUSER@$RHOST -p $RPORT
+    
+#Shortcut to start remote commands:
+    [ ! "$SSH_CIPHER" = "" ] && SSH_CIPHER=" -c $SSH_CIPHER"
+    SSH_EXEC="ssh $SSH_CIPHER -o ControlMaster=auto -o ControlPath=$SSH_CONTROL_PATH $RUSER@$RHOST -p $RPORT"
+
+echo "[..] Checking required executables"
+deps_or_exit
+
+exit
+
 echo
 echo "[..] Trying to connect to $RUSER@$RHOST:$RPORT"
 echo "     and stream display $DISPLAY"
@@ -289,16 +338,6 @@ generate_ICFILE_from_names
 
 #netevent script file
     NESCRIPT=/tmp/nescript$$
-
-SSH_CONTROL_PATH=$HOME/.config/ssh-rdp$$
-
-#Shortcut to start remote commands:
-    [ ! "$SSH_CIPHER" = "" ] && SSH_CIPHER=" -c $SSH_CIPHER"
-    SSH_EXEC="ssh $SSH_CIPHER -o ControlMaster=auto -o ControlPath=$SSH_CONTROL_PATH $RUSER@$RHOST -p $RPORT"
-
-
-#Setup SSH Multiplexing
-    ssh -fN -o ControlMaster=auto -o ControlPath=$SSH_CONTROL_PATH -o ControlPersist=300 $RUSER@$RHOST -p $RPORT
 
 #We need to kill some processes on exit, do it by name.
     FFMPEGEXE=/tmp/ffmpeg$$
