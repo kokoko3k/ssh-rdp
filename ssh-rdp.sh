@@ -2,6 +2,10 @@
 
 #ToDo: 
 #	Remote window title is wrong
+#	Remote audio: delay is still a bit high (less than 100ms)
+#	Remote audio: it is possible to sort aut pulseaudio shortcomings by playing an audio
+#	But ffplay seems to hangs at exit; need to try other ways to either kill it or understand
+#	Why pulse acts this way,
 
 #Requirements:
     #Local+Remote: ffmpeg,?????????????????,openssh,netevent-git
@@ -33,9 +37,9 @@
 
     AUDIO_BITRATE=128 #kbps
     AUDIO_ENC="-acodec libopus -vbr off -application lowdelay"
-    AUDIO_DELAY_COMPENSATION="2500" #The higher the value, the lower the audio delay.
+    AUDIO_DELAY_COMPENSATION="4000" #The higher the value, the lower the audio delay.
                                     #Setting this too high will likely produce crackling sound.
-                                    #Try in range 0-9000
+                                    #Try in range 0-6000
     VIDEO_BITRATE_MAX="5000"  #kbps (or AUTO)
     VIDEO_BITRATE_MAX_SCALE="80" # When VIDEO_BITRATE_MAX is set to "AUTO", only use this percentual of it.
 
@@ -58,7 +62,7 @@
     VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=auto --title="$WTITLE" --untimed --no-cache --profile=low-latency --opengl-glfinish=yes --opengl-swapinterval=0"
 
     AUDIOPLAYER="ffplay - -nostats -loglevel warning -flags low_delay -nodisp -probesize 32 -fflags nobuffer+fastseek+flush_packets -analyzeduration 0 -sync ext -af aresample=async=1:min_comp=0.1:first_pts=$AUDIO_DELAY_COMPENSATION"
-    #AUDIOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-default-bindings=no --untimed --no-cache --profile=low-latency"
+    #AUDIOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-default-bindings=no --untimed --no-cache --profile=low-latency --speed=1.01"
     
 # Misc
     SSH_CIPHER="" #Optionally, force an ssh cipher to be used
@@ -135,6 +139,7 @@ create_input_files() {
 		echo $(name_from_event $evdevice)  >> $EVDFILE
     done
     #ask user to select the keyboard device
+    echo
 	echo "Press a key on the keyboard which will be forwarded."
     KBDDEV=$(inotifywait event* -q | cut -d " " -f 1)
     echo "Got $(name_from_event $KBDDEV)"
@@ -364,9 +369,9 @@ echo "     and stream display $DISPLAY"
 echo "     with size $RES and offset: $OFFSET"
 echo
 
-#Play a test tone to open the pulseaudio sinc prior to recording it to (avoid audio delays at start!?)
-    $SSH_EXEC sh -c 'export SDL_AUDIODRIVER=pulse ; ffplay -nostats -nodisp -f lavfi -i "sine=220:4" -af volume=0.001 -autoexit' &
-    PID5=$!
+#Play a test tone to open the pulseaudio sinc prior to recording it to (avoid audio delays at start!?)	#It seems to hangs at exit
+    #$SSH_EXEC "ffplay -nostats -nodisp -f lavfi -i \"sine=220:4\" -af volume=0.001 -autoexit" &
+    #PID5=$!
 
     
 #Guess audio capture device?
@@ -391,7 +396,7 @@ echo
 	echo [..] Start audio streaming...
     $SSH_EXEC sh -c "\
         export DISPLAY=$RDISPLAY ;\
-        $FFMPEGEXE -v quiet -nostdin -y -f pulse -ac 2 -i "$AUDIO_CAPTURE_SOURCE"  -b:a "$AUDIO_BITRATE"k "$AUDIO_ENC" -f nut -\
+        $FFMPEGEXE -v quiet -nostdin -loglevel warning -y -f pulse -ac 2 -i "$AUDIO_CAPTURE_SOURCE"  -b:a "$AUDIO_BITRATE"k "$AUDIO_ENC" -f nut -\
     " | $AUDIOPLAYER &
     PID4=$!
 
