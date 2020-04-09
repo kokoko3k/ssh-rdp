@@ -3,11 +3,8 @@
 #ToDo:
 #	Remote window title is wrong
 #	Remote audio: delay is still a bit high (less than 100ms)
-#	Remote audio: it is possible to sort aut pulseaudio shortcomings by playing an audio
-#	But ffplay seems to hangs at exit; need to try other ways to either kill it or understand
-#	Why pulse acts this way,
-#
-#	clear links in /tmp on remote
+#	Understand why audio starts with a long delay unless
+#	we keep playing a stream in background (as we now do)
 #
 #	better commandline parameters handling (use named options)
 
@@ -183,6 +180,14 @@ list_descendants() {
 finish() {
     echo ; echo TRAP: finish.
     kill $(list_descendants $$) &>/dev/null
+    #ffplay and/or ffmpeg may hangs on remote, kill them by name
+    $SSH_EXEC "killall $FFPLAYEXE" &>/dev/null
+    $SSH_EXEC "killall $FFMPEGEXE" &>/dev/null
+    sleep 1
+	$SSH_EXEC "killall -9 $FFPLAYEXE" &>/dev/null
+    $SSH_EXEC "killall -9 $FFMPEGEXE" &>/dev/null
+    $SSH_EXEC "unlink $FFMPEGEXE" &>/dev/null
+    $SSH_EXEC "unlink $FFPLAYEXE" &>/dev/null
     rm $NESCRIPT &>/dev/null
 }
 trap finish INT TERM EXIT
@@ -377,7 +382,7 @@ echo "     with size $RES and offset: $OFFSET"
 echo
 
 #Play a test tone to open the pulseaudio sinc prior to recording it to (avoid audio delays at start!?)	#It seems to hangs at exit
-    #$SSH_EXEC "ffplay -nostats -nodisp -f lavfi -i \"sine=220:4\" -af volume=0.001 -autoexit" &
+    $SSH_EXEC "$FFPLAYEXE -nostats -nodisp -f lavfi -i \"sine=220:4\" -af volume=0.001 -autoexit" &
     #PID5=$!
 
     
