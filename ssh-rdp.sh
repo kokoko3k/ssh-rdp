@@ -2,7 +2,6 @@
 
 #ToDo: 
 #	Remote window title is wrong
-#	Check deps
 
 #Requirements:
     #Local+Remote: ffmpeg,?????????????????,openssh,netevent-git
@@ -26,7 +25,7 @@
     
 #Encoding:
     AUDIO_CAPTURE_SOURCE="guess" # "pulseaudio name like alsa_output.pci-0000_00_1b.0.analog-stereo.monitor" or "guess"
-    FPS=30         # frames per second of the stream
+    FPS=60         # frames per second of the stream
     RES="auto"     # "ex: RES="1280x1024" or RES="auto". 
                    # If wrong, video grab will not work.
     OFFSET="+0,0"      # ex: OFFSET="" or OFFSET="+10,+40".
@@ -41,9 +40,9 @@
     VIDEO_BITRATE_MAX_SCALE="80" # When VIDEO_BITRATE_MAX is set to "AUTO", only use this percentual of it.
 
     #cpu encoder
-    VIDEO_ENC="-threads 1 -vcodec libx264 -thread_type slice -slices 1 -level 32 -preset ultrafast -tune zerolatency -intra-refresh 1 -x264opts vbv-bufsize=1:slice-max-size=1500:keyint=$FPS:sliced_threads=1"
+    #VIDEO_ENC="-threads 1 -vcodec libx264 -thread_type slice -slices 1 -level 32 -preset ultrafast -tune zerolatency -intra-refresh 1 -x264opts vbv-bufsize=1:slice-max-size=1500:keyint=$FPS:sliced_threads=1"
     #nvidia gpu encoder
-    #VIDEO_ENC="-threads 1 -c:v h264_nvenc -preset llhq -delay 0 -zerolatency 1"
+    VIDEO_ENC="-threads 1 -c:v h264_nvenc -preset llhq -delay 0 -zerolatency 1"
     #amd gpu encoder
     #VIDEO_ENC="-threads 1 -vaapi_device /dev/dri/renderD128 -vf 'hwupload,scale_vaapi=format=nv12' -c:v h264_vaapi"
     #intel gpu encoder
@@ -54,10 +53,13 @@
     
 # Decoding
     #ffplay, low latency, no hardware decoding
-    VIDEOPLAYER="ffplay - -nostats -window_title "$WTITLE" -probesize 32 -flags low_delay -framedrop  -fflags nobuffer+fastseek+flush_packets -analyzeduration 0 -sync ext"
+    #VIDEOPLAYER="ffplay - -nostats -window_title "$WTITLE" -probesize 32 -flags low_delay -framedrop  -fflags nobuffer+fastseek+flush_packets -analyzeduration 0 -sync ext"
     #mpv, less latency, possibly hardware decoding, hammers the cpu.
-    #VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=auto --title="$WTITLE" --untimed --no-cache --profile=low-latency --opengl-glfinish=yes --opengl-swapinterval=0"
+    VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=auto --title="$WTITLE" --untimed --no-cache --profile=low-latency --opengl-glfinish=yes --opengl-swapinterval=0"
 
+    AUDIOPLAYER="ffplay - -nostats -loglevel warning -flags low_delay -nodisp -probesize 32 -fflags nobuffer+fastseek+flush_packets -analyzeduration 0 -sync ext -af aresample=async=1:min_comp=0.1:first_pts=$AUDIO_DELAY_COMPENSATION"
+    #AUDIOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-default-bindings=no --untimed --no-cache --profile=low-latency"
+    
 # Misc
     SSH_CIPHER="" #Optionally, force an ssh cipher to be used
     #SSH_CIPHER="aes256-gcm@openssh.com"
@@ -362,7 +364,11 @@ echo "     and stream display $DISPLAY"
 echo "     with size $RES and offset: $OFFSET"
 echo
 
+#Play a test tone to open the pulseaudio sinc prior to recording it to (avoid audio delays at start!?)
+    $SSH_EXEC sh -c 'export SDL_AUDIODRIVER=pulse ; ffplay -nostats -nodisp -f lavfi -i "sine=220:4" -af volume=0.001 -autoexit' &
+    PID5=$!
 
+    
 #Guess audio capture device?
     if [ "$AUDIO_CAPTURE_SOURCE" = "guess" ] ; then
 		echo "[..] Guessing audio capture device"
@@ -380,13 +386,13 @@ echo
         echo
     fi
 
+    
 #Grab Audio
 	echo [..] Start audio streaming...
     $SSH_EXEC sh -c "\
         export DISPLAY=$RDISPLAY ;\
         $FFMPEGEXE -v quiet -nostdin -y -f pulse -ac 2 -i "$AUDIO_CAPTURE_SOURCE"  -b:a "$AUDIO_BITRATE"k "$AUDIO_ENC" -f nut -\
-    " | \
-    ffplay - -nostats -loglevel warning -flags low_delay -nodisp -probesize 32 -fflags nobuffer+fastseek+flush_packets -analyzeduration 0 -sync ext -af aresample=async=1:min_comp=0.1:first_pts=$AUDIO_DELAY_COMPENSATION &
+    " | $AUDIOPLAYER &
     PID4=$!
 
 	echo [..] Start video streaming...
