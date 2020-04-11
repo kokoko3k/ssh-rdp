@@ -37,7 +37,7 @@
     AUDIO_BITRATE=128 #kbps
     #Audio encoders:
 		AUDIO_ENC="-acodec libopus -vbr off -application lowdelay"	#opus, low delay great quality
-		#AUDIO_ENC="-acodec pcm_s16le"	#pcm, low delay, best quality
+		#AUDIO_ENC="-acodec pcm_s16le "	#pcm, low delay, best quality
 
 	AUDIO_DELAY_COMPENSATION="4000" #The higher the value, the lower the audio delay.
                                     #Setting this too high will likely produce crackling sound.
@@ -55,6 +55,10 @@
     #intel gpu encoder
 		#VIDEO_ENC="???"
 
+		
+	#Prescale desktop before sending?
+	PRESCALE="" # eg: "" or something like "1280x720"
+		
     #Remote window title
     WTITLE="$RUSER@$RHOST""$RDISPLAY"
 
@@ -310,6 +314,9 @@ do
 		-r|--resolution)
 			RES="$2"
 			shift ; shift ;;
+		--prescale)
+			PRESCALE="$2"
+			shift ; shift ;;
 		-o|--offset)
 			OFFSET="$2"
 			shift ; shift ;;
@@ -338,15 +345,17 @@ done
         echo ""
         echo "$me inputconfig    create or change the input config file"
         echo ""
-        echo "-s|--server        remote host to connect to"
-        echo "-u --user          ssh username"
-		echo "-p|--port          ssh port"
-		echo "-d|--display       remote display (eg: 0.0)"
-		echo "-r|--resolution    grab size (eg: 1920x1080) or AUTO"
-		echo "-o|--offset        grab offset (eg: +1920,0)"
-		echo "-f|--fps           grabbed frames per second"
-		echo "-v|--vbitrate      video bitrate in kbps or AUTO"
-		echo "-a|--abitrate      audio bitrate in kbps"
+        echo "-s, --server        remote host to connect to"
+        echo "-u, --user          ssh username"
+		echo "-p, --port          ssh port"
+		echo "-d, --display       remote display (eg: 0.0)"
+		echo "-r, --resolution    grab size (eg: 1920x1080) or AUTO"
+		echo "-o, --offset        grab offset (eg: +1920,0)"
+		echo "    --prescale      scale video before encoding (eg: 1280x720)"
+		echo "                    Has impact on remote cpu use and can increase latency too."
+		echo "-f, --fps           grabbed frames per second"
+		echo "-v, --vbitrate      video bitrate in kbps or AUTO"
+		echo "-a, --abitrate      audio bitrate in kbps"
         		
         echo "Example 1: john connecting to jserver, all defaults accepted"
         echo "    "$me" --user john --server jserver"
@@ -458,11 +467,13 @@ echo
     " | $AUDIOPLAYER &
     PID4=$!
 
+#Grab Video
 	echo [..] Start video streaming...
+	if [ ! "$PRESCALE" = "" ] ; then SCALESTR="-sws_flags fast_bilinear -vf scale=$PRESCALE " ; fi
     $SSH_EXEC sh -c "\
         export DISPLAY=$RDISPLAY ;\
-        $FFMPEGEXE -nostdin -loglevel warning -y -f x11grab -r $FPS -framerate $FPS -video_size $RES -i "$RDISPLAY""$OFFSET"  -b:v "$VIDEO_BITRATE_MAX"k  -maxrate "$VIDEO_BITRATE_MAX"k \
-        "$VIDEO_ENC" -f_strict experimental -syncpoints none -f nut -\
+        $FFMPEGEXE -nostdin -loglevel warning -y -f x11grab -r $FPS -framerate $FPS -video_size $RES -i "$RDISPLAY""$OFFSET" -b:v "$VIDEO_BITRATE_MAX"k  -maxrate "$VIDEO_BITRATE_MAX"k \
+        "$VIDEO_ENC" -f_strict experimental $SCALESTR -syncpoints none -f nut -\
     " | $VIDEOPLAYER
 
 
