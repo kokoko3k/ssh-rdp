@@ -50,10 +50,11 @@
 	
 	#Prescale desktop before sending?
 	PRESCALE="" # eg: "" or something like "1280x720"
-		
-    #Remote window title
-    WTITLE="$RUSER@$RHOST""$RDISPLAY"
 
+	#Remote window title
+    #WTITLE="$RUSER@$RHOST""$RDISPLAY"
+    WTITLE="ssh-rdp""-"\["$$"\]
+    
 # Decoding
     #ffplay, low latency, no hardware decoding
     #VIDEOPLAYER="ffplay - -nostats -window_title "$WTITLE" -probesize 32 -flags low_delay -framedrop  -fflags nobuffer+fastseek+flush_packets -analyzeduration 0 -sync ext"
