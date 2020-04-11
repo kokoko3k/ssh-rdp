@@ -180,7 +180,7 @@ list_descendants() {
 
 #Clean function
 finish() {
-    echo ; echo TRAP: finish.
+    #echo ; echo TRAP: finish.
     kill $(list_descendants $$) &>/dev/null
     #ffplay and/or ffmpeg may hangs on remote, kill them by name
     $SSH_EXEC "killall $FFPLAYEXE" &>/dev/null
@@ -287,34 +287,78 @@ if [ "$1 " = "inputconfig " ] ; then
     exit
 fi
 
+#Parse arguments
+while [[ $# -gt 0 ]]
+do
+arg="$1"
+	case $arg in
+		-u|--user)
+		RUSER="$2"
+		shift ; shift
+		;;
+		-h|--host)
+		RHOST="$2"
+		shift ; shift
+		;;
+		-p|--port)
+		RPORT="$2"
+		shift ; shift
+		;;
+		-d|--display)
+		RDISPLAY="$2"
+		shift ; shift
+		;;
+		-r|--resolution)
+		RES="$2"
+		shift ; shift
+		;;
+		-o|--offset)
+		OFFSET="$2"
+		shift ; shift
+		;;
+		-f|--fps)
+		FPS="$2"
+		shift ; shift
+		;;
+		-v|--vbitrate)
+		VIDEO_BITRATE_MAX="$2"
+		shift ; shift
+		;;
+		-a|--abitrate)
+		AUDIO_BITRATE="$2"
+		shift ; shift
+		;;
+	esac
+done
 
-if [ ! $1 = "" ] ; then
-    #read user and host and override defaults if specified by command line
-    read RUSER RHOST RPORT_R RDISPLAY_R RES_R OFFSET_R FPS_R AUDIO_BITRATE_R VIDEO_BITRATE_MAX_R <<< $(echo "$1" | awk -F [@:] '{print $1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9}')
 
-    [ "$RPORT_R" != "" ]    && RPORT=$RPORT_R
-    [ "$RDISPLAY_R" != "" ] && RDISPLAY=$RDISPLAY_R
-    [ "$RES_R" != "" ]      && RES=$RES_R
-    [ "$OFFSET_R" != "" ]   && OFFSET=$OFFSET_R
-    [ "$FPS_R" != "" ]   && FPS=$FPS_R
-    [ "$AUDIO_BITRATE_R" != "" ]   && AUDIO_BITRATE=$AUDIO_BITRATE_R
-    [ "$VIDEO_BITRATE_MAX_R" != "" ]   && VIDEO_BITRATE_MAX=$VIDEO_BITRATE_MAX_R
-fi
 
 #Sanity check
     me=$(basename "$0")
     if [ -z $RUSER ] || [ -z $RHOST ] || [ "$1" = "-h" ] ; then
         echo Please edit "$me" to suid your needs and/or use the following options:
-        echo Format: "$me" "user@host:ssh-port:DISPLAY:size:offset:fps:abitrate:vbitrate"
+        echo Usage: "$me" "[OPTIONS]"
         echo ""
+        echo "OPTIONS"
+        echo ""
+        echo "-h|--host          remote host to connect to"
+        echo "-u --user          ssh username"
+		echo "-p|--port          ssh port"
+		echo "-d|--display       remote display (eg: 0.0)"
+		echo "-r|--resolution    grab size (eg: 1920x1080) or AUTO"
+		echo "-o|--offset        grab offset (eg: +1920,0)"
+		echo "-f|--fps           grabbed frames per second"
+		echo "-v|--vbitrate      video bitrate in kbps"
+		echo "-a|--abitrate      audio bitrate in kbps"
+        		
         echo "Example 1: john connecting to jserver, all defaults accepted"
-        echo "    Ex: "$me" john@jserver"
+        echo "    Ex: "$me" --user john --host jserver"
         echo 
         echo "Example 2:"
         echo "    john connecting to jserver on ssh port 322, streaming the display 0.0"
         echo "    remote setup is dual head and john selects the right monitor."
         echo "    Stream will be 128kbps for audio and 10000kbps for video:"
-        echo "    Ex: $me john@jserver:322:0.0:1920x1080:+1920,0:60:128:10000"
+        echo "    Ex: $me -u john -s jserver -p 322 -d 0.0 -r 1920x1080 -o +1920,0 -f 60 -a 128 -v 10000"
         echo ""
         echo "    Use: $me inputconfig (to create or change the input config file)"
         echo
@@ -347,6 +391,8 @@ fi
 
 echo "[..] Checking required executables"
 deps_or_exit
+echo "[OK] Checking required executables"
+echo 
 
 generate_ICFILE_from_names
 
