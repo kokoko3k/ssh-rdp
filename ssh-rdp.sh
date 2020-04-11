@@ -355,6 +355,7 @@ done
 		echo "                    Has impact on remote cpu use and can increase latency too."
 		echo "-f, --fps           grabbed frames per second"
 		echo "-v, --vbitrate      video bitrate in kbps or AUTO"
+		echo "                    AUTO will use 80% of the maximum available throughput."
 		echo "-a, --abitrate      audio bitrate in kbps"
         		
         echo "Example 1: john connecting to jserver, all defaults accepted"
