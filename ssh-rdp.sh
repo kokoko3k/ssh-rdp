@@ -340,7 +340,7 @@ done
 		echo "-r|--resolution    grab size (eg: 1920x1080) or AUTO"
 		echo "-o|--offset        grab offset (eg: +1920,0)"
 		echo "-f|--fps           grabbed frames per second"
-		echo "-v|--vbitrate      video bitrate in kbps"
+		echo "-v|--vbitrate      video bitrate in kbps or AUTO"
 		echo "-a|--abitrate      audio bitrate in kbps"
         		
         echo "Example 1: john connecting to jserver, all defaults accepted"
