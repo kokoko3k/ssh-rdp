@@ -47,9 +47,9 @@
 
     #Video encoders:
     #cpu
-		#VIDEO_ENC="-threads 1 -vcodec libx264 -thread_type slice -slices 1 -level 32 -preset ultrafast -tune zerolatency -intra-refresh 1 -x264opts vbv-bufsize=1:slice-max-size=1500:keyint=$FPS:sliced_threads=1"
+		VIDEO_ENC="-threads 1 -vcodec libx264 -thread_type slice -slices 1 -level 32 -preset ultrafast -tune zerolatency -intra-refresh 1 -x264opts vbv-bufsize=1:slice-max-size=1500:keyint=$FPS:sliced_threads=1 -pix_fmt nv12"
     #nvidia gpu
-		VIDEO_ENC="-threads 1 -c:v h264_nvenc -preset llhq -delay 0 -zerolatency 1"
+		#VIDEO_ENC="-threads 1 -c:v h264_nvenc -preset llhq -delay 0 -zerolatency 1"
     #amd gpu
 		#VIDEO_ENC="-threads 1 -vaapi_device /dev/dri/renderD128 -vf 'hwupload,scale_vaapi=format=nv12' -c:v h264_vaapi"
     #intel gpu encoder
@@ -343,7 +343,7 @@ done
         echo ""
         echo "OPTIONS"
         echo ""
-        echo "$me inputconfig    create or change the input config file"
+        echo "Use $me inputconfig to create or change the input config file"
         echo ""
         echo "-s, --server        remote host to connect to"
         echo "-u, --user          ssh username"
@@ -473,8 +473,8 @@ echo
 	if [ ! "$PRESCALE" = "" ] ; then SCALESTR="-sws_flags fast_bilinear -vf scale=$PRESCALE " ; fi
     $SSH_EXEC sh -c "\
         export DISPLAY=$RDISPLAY ;\
-        $FFMPEGEXE -nostdin -loglevel warning -y -f x11grab -r $FPS -framerate $FPS -video_size $RES -i "$RDISPLAY""$OFFSET" -b:v "$VIDEO_BITRATE_MAX"k  -maxrate "$VIDEO_BITRATE_MAX"k \
-        "$VIDEO_ENC" -f_strict experimental $SCALESTR -syncpoints none -f nut -\
+        $FFMPEGEXE -nostdin -loglevel warning -y -f x11grab -r $FPS -framerate $FPS -video_size $RES -i "$RDISPLAY""$OFFSET" $SCALESTR -b:v "$VIDEO_BITRATE_MAX"k  -maxrate "$VIDEO_BITRATE_MAX"k \
+        "$VIDEO_ENC" -f_strict experimental -syncpoints none -f nut -\
     " | $VIDEOPLAYER
 
 
