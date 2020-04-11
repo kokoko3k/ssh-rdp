@@ -323,7 +323,6 @@ do
 done
 
 
-
 #Sanity check
     me=$(basename "$0")
     if [ -z $RUSER ] || [ -z $RHOST ] || [ "$1" = "-h" ] ; then
@@ -422,7 +421,7 @@ echo "     with size $RES and offset: $OFFSET"
 echo
 
 #Play a test tone to open the pulseaudio sinc prior to recording it to (avoid audio delays at start!?)	#This hangs at exit, so we'll kill it by name.
-    $SSH_EXEC "$FFPLAYEXE -nostats -nodisp -f lavfi -i \"sine=220:4\" -af volume=0.001 -autoexit" &
+    $SSH_EXEC "$FFPLAYEXE -loglevel warning -nostats -nodisp -f lavfi -i \"sine=220:4\" -af volume=0.001 -autoexit" &
     #PID5=$!
 
 
