@@ -285,52 +285,40 @@ if [ "$1 " = "inputconfig " ] ; then
     exit
 fi
 
-echo ciao
-
 #Parse arguments
 while [[ $# -gt 0 ]]
 do
-arg="$1"
+	arg="$1"
 	case $arg in
 		-u|--user)
-		RUSER="$2"
-		shift ; shift
-		;;
+			RUSER="$2"
+			shift ; shift ;;
 		-s|--server)
-		RHOST="$2"
-		shift ; shift
-		;;
+			RHOST="$2"
+			shift ; shift ;;
 		-p|--port)
-		RPORT="$2"
-		shift ; shift
-		;;
+			RPORT="$2"
+			shift ; shift ;;
 		-d|--display)
-		RDISPLAY="$2"
-		shift ; shift
-		;;
+			RDISPLAY="$2"
+			shift ; shift ;;
 		-r|--resolution)
-		RES="$2"
-		shift ; shift
-		;;
+			RES="$2"
+			shift ; shift ;;
 		-o|--offset)
-		OFFSET="$2"
-		shift ; shift
-		;;
+			OFFSET="$2"
+			shift ; shift ;;
 		-f|--fps)
-		FPS="$2"
-		shift ; shift
-		;;
+			FPS="$2"
+			shift ; shift ;;
 		-v|--vbitrate)
-		VIDEO_BITRATE_MAX="$2"
-		shift ; shift
-		;;
+			VIDEO_BITRATE_MAX="$2"
+			shift ; shift ;;
 		-a|--abitrate)
-		AUDIO_BITRATE="$2"
-		shift ; shift
-		;;
-		*)
-		shift
-		;;
+			AUDIO_BITRATE="$2"
+			shift ; shift ;;
+		*) 
+			shift ;;
 	esac
 done
 
