@@ -34,6 +34,9 @@
     OFFSET="+0,0"      # ex: OFFSET="" or OFFSET="+10,+40".
                    # If wrong, video grab will not work.
 
+	VIDEOENC="cpu"   #cpu,amdgpu,nvgpu; intel still unsupported
+	AUDIOENC="opus"  #opus,pcm
+                   
     AUDIO_BITRATE=128 #kbps
     #Audio encoders:
 		AUDIO_ENC="-acodec libopus -vbr off -application lowdelay"	#opus, low delay great quality
@@ -44,18 +47,7 @@
                                     #Try in range 0-6000
     VIDEO_BITRATE_MAX="5000"  #kbps (or AUTO)
     VIDEO_BITRATE_MAX_SCALE="80" # When VIDEO_BITRATE_MAX is set to "AUTO", only use this percentual of it.
-
-    #Video encoders:
-    #cpu
-		VIDEO_ENC="-threads 1 -vcodec libx264 -thread_type slice -slices 1 -level 32 -preset ultrafast -tune zerolatency -intra-refresh 1 -x264opts vbv-bufsize=1:slice-max-size=1500:keyint=$FPS:sliced_threads=1 -pix_fmt nv12"
-    #nvidia gpu
-		#VIDEO_ENC="-threads 1 -c:v h264_nvenc -preset llhq -delay 0 -zerolatency 1"
-    #amd gpu
-		#VIDEO_ENC="-threads 1 -vaapi_device /dev/dri/renderD128 -vf 'hwupload,scale_vaapi=format=nv12' -c:v h264_vaapi"
-    #intel gpu encoder
-		#VIDEO_ENC="???"
-
-		
+	
 	#Prescale desktop before sending?
 	PRESCALE="" # eg: "" or something like "1280x720"
 		
@@ -323,6 +315,12 @@ do
 		-f|--fps)
 			FPS="$2"
 			shift ; shift ;;
+		--videoenc)
+			VIDEOENC="$2"
+			shift ; shift ;;
+		--audioenc)
+			AUDIOENC="$2"
+			shift ; shift ;;
 		-v|--vbitrate)
 			VIDEO_BITRATE_MAX="$2"
 			shift ; shift ;;
@@ -354,6 +352,8 @@ done
 		echo "    --prescale      scale video before encoding (eg: 1280x720)"
 		echo "                    Has impact on remote cpu use and can increase latency too."
 		echo "-f, --fps           grabbed frames per second"
+		echo "    --videoenc      Video encoder can be cpu,amdgpu and nvgpu (intel gpu still unsupported)"
+		echo "    --audioenc      Audio encoder can be opus or pcm"
 		echo "-v, --vbitrate      video bitrate in kbps or AUTO"
 		echo "                    AUTO will use 80% of the maximum available throughput."
 		echo "-a, --abitrate      audio bitrate in kbps"
@@ -373,6 +373,8 @@ done
         echo "default size    : $RES"
         echo "default offset  : $OFFSET"
         echo "default fps     : $FPS"
+        echo "default video encoder: $VIDEOENC"
+        echo "default audio encoder: $AUDIOENC"
         echo "default abitrate: $AUDIO_BITRATE kbps"
         echo "default vbitrate: $VIDEO_BITRATE_MAX kbps"
         exit
@@ -459,7 +461,32 @@ echo
         echo
     fi
 
+#Select video encoder:
+	case  $VIDEOENC  in
+		cpu)       
+			VIDEO_ENC="-threads 1 -vcodec libx264 -thread_type slice -slices 1 -level 32 -preset ultrafast -tune zerolatency -intra-refresh 1 -x264opts vbv-bufsize=1:slice-max-size=1500:keyint=$FPS:sliced_threads=1 -pix_fmt nv12" ;;
+		nvgpu)
+			VIDEO_ENC="-threads 1 -c:v h264_nvenc -preset llhq -delay 0 -zerolatency 1" ;;            
+		amdgpu)       
+			VIDEO_ENC="-threads 1 -vaapi_device /dev/dri/renderD128 -vf 'hwupload,scale_vaapi=format=nv12' -c:v h264_vaapi" ;;
+		#intelgpu)       
+			#VIDEO_ENC="???" ;;			
+		*)              
+			echo "[EE] Unsupported video encoder"
+			exit ;;
+	esac 
 
+#Select audio encoder:
+	case  $AUDIOENC  in
+		opus)       
+			AUDIO_ENC="" ;;
+		pcm16)
+			AUDIO_ENC="" ;;            	
+		*)              
+			echo "[EE] Unsupported audio encoder"
+			exit ;;
+	esac 
+	
 #Grab Audio
 	echo [..] Start audio streaming...
     $SSH_EXEC sh -c "\
