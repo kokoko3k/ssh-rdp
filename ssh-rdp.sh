@@ -166,6 +166,8 @@ create_input_files() {
 		echo
 		echo GRAB_HOTKEY=$GRAB_HOTKEY
 		echo FULLSCREENSWITCH_HOTKEY=$FULLSCREENSWITCH_HOTKEY
+		
+	rm $tmpfile
 }
 
 list_descendants() {
@@ -174,7 +176,7 @@ list_descendants() {
         list_descendants "$pid"
     done
     echo "$children"
-}   
+}
 
 #Clean function
 finish() {
@@ -285,10 +287,11 @@ if [ "$1 " = "inputconfig " ] ; then
     exit
 fi
 
+
 if [ ! $1 = "" ] ; then
     #read user and host and override defaults if specified by command line
     read RUSER RHOST RPORT_R RDISPLAY_R RES_R OFFSET_R FPS_R AUDIO_BITRATE_R VIDEO_BITRATE_MAX_R <<< $(echo "$1" | awk -F [@:] '{print $1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9}')
-       
+
     [ "$RPORT_R" != "" ]    && RPORT=$RPORT_R
     [ "$RDISPLAY_R" != "" ] && RDISPLAY=$RDISPLAY_R
     [ "$RES_R" != "" ]      && RES=$RES_R
@@ -298,7 +301,7 @@ if [ ! $1 = "" ] ; then
     [ "$VIDEO_BITRATE_MAX_R" != "" ]   && VIDEO_BITRATE_MAX=$VIDEO_BITRATE_MAX_R
 fi
 
-#Sanity check    
+#Sanity check
     me=$(basename "$0")
     if [ -z $RUSER ] || [ -z $RHOST ] || [ "$1" = "-h" ] ; then
         echo Please edit "$me" to suid your needs and/or use the following options:
@@ -337,7 +340,7 @@ fi
 #Setup SSH Multiplexing
 	SSH_CONTROL_PATH=$HOME/.config/ssh-rdp$$
     ssh -fN -o ControlMaster=auto -o ControlPath=$SSH_CONTROL_PATH -o ControlPersist=300 $RUSER@$RHOST -p $RPORT
-    
+
 #Shortcut to start remote commands:
     [ ! "$SSH_CIPHER" = "" ] && SSH_CIPHER=" -c $SSH_CIPHER"
     SSH_EXEC="ssh $SSH_CIPHER -o ControlMaster=auto -o ControlPath=$SSH_CONTROL_PATH $RUSER@$RHOST -p $RPORT"
@@ -381,11 +384,11 @@ echo "     and stream display $DISPLAY"
 echo "     with size $RES and offset: $OFFSET"
 echo
 
-#Play a test tone to open the pulseaudio sinc prior to recording it to (avoid audio delays at start!?)	#It seems to hangs at exit
+#Play a test tone to open the pulseaudio sinc prior to recording it to (avoid audio delays at start!?)	#This hangs at exit, so we'll kill it by name.
     $SSH_EXEC "$FFPLAYEXE -nostats -nodisp -f lavfi -i \"sine=220:4\" -af volume=0.001 -autoexit" &
     #PID5=$!
 
-    
+
 #Guess audio capture device?
     if [ "$AUDIO_CAPTURE_SOURCE" = "guess" ] ; then
 		echo "[..] Guessing audio capture device"
@@ -394,7 +397,7 @@ echo
         echo "[OK] Guessed audio capture source:" $AUDIO_CAPTURE_SOURCE
 		echo
     fi
-    
+
 #Auto video grab size?
     if [ "$RES" = "auto" ] || [ "$RES" = "" ] ; then
 		echo "[..] Guessing remote resolution"
@@ -403,7 +406,7 @@ echo
         echo
     fi
 
-    
+
 #Grab Audio
 	echo [..] Start audio streaming...
     $SSH_EXEC sh -c "\
@@ -418,5 +421,5 @@ echo
         $FFMPEGEXE -nostdin -loglevel warning -y -f x11grab -r $FPS -framerate $FPS -video_size $RES -i "$RDISPLAY""$OFFSET"  -b:v "$VIDEO_BITRATE_MAX"k  -maxrate "$VIDEO_BITRATE_MAX"k \
         "$VIDEO_ENC" -f_strict experimental -syncpoints none -f nut -\
     " | $VIDEOPLAYER
-    
-    
+
+
