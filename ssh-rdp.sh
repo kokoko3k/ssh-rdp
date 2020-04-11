@@ -224,6 +224,7 @@ setup_input_loop() {
     echo "output add myremote exec:$SSH_EXEC netevent create" >>$NESCRIPT
     echo "use myremote" >>$NESCRIPT
 
+    echo 
     echo "[..] Starting netevent daemon"
     netevent daemon -s $NESCRIPT netevent-command.sock | while read -r hotkey; do
         echo "read hotkey: " $hotkey
@@ -411,7 +412,9 @@ if [ "$VIDEO_BITRATE_MAX" = "AUTO" ] ; then
     echo  
 fi
 
-setup_input_loop &
+echo
+setup_input_loop & 
+sleep 0.1 #(just to not shuffle output messages)
 PID1=$!
 
 echo
