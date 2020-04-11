@@ -5,8 +5,6 @@
 #	Remote audio: delay is still a bit high (less than 100ms)
 #	Understand why audio starts with a long delay unless
 #	we keep playing a stream in background (as we now do)
-#
-#	better commandline parameters handling (use named options)
 
 #Requirements:
     #Local+Remote: ffmpeg,?????????????????,openssh,netevent-git
@@ -287,6 +285,8 @@ if [ "$1 " = "inputconfig " ] ; then
     exit
 fi
 
+echo ciao
+
 #Parse arguments
 while [[ $# -gt 0 ]]
 do
@@ -296,7 +296,7 @@ arg="$1"
 		RUSER="$2"
 		shift ; shift
 		;;
-		-h|--host)
+		-s|--server)
 		RHOST="$2"
 		shift ; shift
 		;;
@@ -328,6 +328,9 @@ arg="$1"
 		AUDIO_BITRATE="$2"
 		shift ; shift
 		;;
+		*)
+		shift
+		;;
 	esac
 done
 
@@ -341,7 +344,9 @@ done
         echo ""
         echo "OPTIONS"
         echo ""
-        echo "-h|--host          remote host to connect to"
+        echo "$me inputconfig    create or change the input config file"
+        echo ""
+        echo "-s|--server        remote host to connect to"
         echo "-u --user          ssh username"
 		echo "-p|--port          ssh port"
 		echo "-d|--display       remote display (eg: 0.0)"
@@ -352,15 +357,13 @@ done
 		echo "-a|--abitrate      audio bitrate in kbps"
         		
         echo "Example 1: john connecting to jserver, all defaults accepted"
-        echo "    Ex: "$me" --user john --host jserver"
+        echo "    "$me" --user john --server jserver"
         echo 
         echo "Example 2:"
         echo "    john connecting to jserver on ssh port 322, streaming the display 0.0"
         echo "    remote setup is dual head and john selects the right monitor."
         echo "    Stream will be 128kbps for audio and 10000kbps for video:"
         echo "    Ex: $me -u john -s jserver -p 322 -d 0.0 -r 1920x1080 -o +1920,0 -f 60 -a 128 -v 10000"
-        echo ""
-        echo "    Use: $me inputconfig (to create or change the input config file)"
         echo
         echo "user and host are mandatory."
         echo "default ssh-port: $RPORT"
