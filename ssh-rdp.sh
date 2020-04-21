@@ -14,8 +14,6 @@
     #Remote: xdpyinfo,pulseaudio
     #read/write access to input devices on local and remote system (input group) (sudo gpasswd --add username input)
 
-#Restrictions: only one keyboard supported.
-
 #Remote host (you can pass the following via command line in the format:  john@server:22:0.0)
     RHOST="" # Remote ip or hostname
     RPORT="22"             # Remote ssh port to connect to
@@ -33,7 +31,7 @@
     FPS=60         # frames per second of the stream
     RES="auto"     # "ex: RES="1280x1024" or RES="auto". 
                    # If wrong, video grab will not work.
-    OFFSET="+0,0"      # ex: OFFSET="" or OFFSET="+10,+40".
+    OFFSET="+0,0"  # ex: OFFSET="" or OFFSET="+10,+40".
                    # If wrong, video grab will not work.
 	
 	VIDEO_ENC_CPU="-threads 1 -vcodec libx264 -thread_type slice -slices 1 -level 32 -preset ultrafast -tune zerolatency -intra-refresh 1 -x264opts vbv-bufsize=1:slice-max-size=1500:keyint=$FPS:sliced_threads=1 -pix_fmt nv12"
