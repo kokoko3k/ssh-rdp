@@ -6,7 +6,6 @@
 #	Understand why audio starts with a long delay unless
 #	we keep playing a stream in background (as we now do)
 #   * allow tho choose video player by command line
-#	Colored messages
 
 #Requirements:
     #Local+Remote: ffmpeg,openssh,netevent-git
@@ -22,9 +21,6 @@
     EVDFILE="$HOME/.config/ssh-rdp.input.evd.config"  #Holds the name of the forwarded evdev device 
     KBDFILE="$HOME/.config/ssh-rdp.input.kbd.config"  #Holds the name of the forwarded keyboard evdev device
     HKFILE="$HOME/.config/ssh-rdp.input.hk.config"    #where the keypress codes to switch fullscreen and forward reside
-
-    #GRAB_HOTKEY="" # Grab/Ungrab devices 70=scroll_lock (commented because it is read from a file)
-    #FULLSCREENSWITCH_HOTKEY="" # Switch fullscreen (commented because it is read from a file)
 
 #Encoding:
     AUDIO_CAPTURE_SOURCE="guess" # "pulseaudio name like alsa_output.pci-0000_00_1b.0.analog-stereo.monitor" or "guess"
@@ -81,6 +77,12 @@
 
 ICFILE_RUNTIME=~/.config/ssh-rdp.input.out.config
 
+print_error()   { echo -e "\e[1m\e[91m[EE] $1\e[0m" ;};
+print_warning() { echo -e "\e[1m\e[93m[WW] $1\e[0m" ;};
+print_notice()  { echo -e "\e[1m[!!] $1\e[0m" ;};
+print_ok()      { echo -e "\e[1m\e[92m[OK] $1\e[0m" ;};
+print_pending() { echo -e "\e[1m\e[94m[..] $1\e[0m" ;};
+
 generate_ICFILE_from_names() {
     #Also, exits from the script if no keyboard is found
     I_IFS="$IFS"
@@ -89,13 +91,13 @@ generate_ICFILE_from_names() {
 
     rm $ICFILE_RUNTIME $ICFILE_REJ &>/dev/null
     ERROR="0"
-    echo [..] Checking input devices...
+    print_pending "Checking input devices..."
 	for device_name in $(<$EVDFILE) ; do
 		evdev_devices=$(events_from_name "$device_name")
 		if [ "$evdev_devices" = "" ] ; then
-			echo "[!!] Device unavailable : $device_name"
+			print_warning "Device unavailable : $device_name"
 				else
-			echo "[OK] Device ready       : $device_name"
+			print_ok "Device ready       : $device_name"
 			for evdevice in $evdev_devices ; do
 				echo "     add event device for $device_name: $evdevice"
 				echo -n $evdevice" " >> "$ICFILE_RUNTIME"
@@ -103,10 +105,10 @@ generate_ICFILE_from_names() {
 		fi
     done
     IFS="$I_IFS"
-    echo [..] Reading hotkey file $HKFILE
+    print_pending "Reading hotkey file $HKFILE"
     read GRAB_HOTKEY FULLSCREENSWITCH_HOTKEY <<< $(<$HKFILE)
-    echo [OK] GRAB_HOTKEY=$GRAB_HOTKEY
-    echo [OK] FULLSCREENSWITCH_HOTKEY=$FULLSCREENSWITCH_HOTKEY
+    print_ok "GRAB_HOTKEY=$GRAB_HOTKEY"
+    print_ok "FULLSCREENSWITCH_HOTKEY=$FULLSCREENSWITCH_HOTKEY"
 }
 
 name_from_event(){
@@ -208,7 +210,7 @@ benchmark_net() {
 FS="F"
 setup_input_loop() {    
     #Parse remote hotkeys and perform local actions (eg: Fullscreen switching)
-    echo "[..] Setting up input loop and forwarding devices"
+    print_pending "Setting up input loop and forwarding devices"
     #Prepare netevent script
     i=1
     touch $NESCRIPT
@@ -231,7 +233,7 @@ setup_input_loop() {
     echo "use myremote" >>$NESCRIPT
 
     echo 
-    echo "[..] Starting netevent daemon"
+    print_pending "Starting netevent daemon"
     netevent daemon -s $NESCRIPT netevent-command.sock | while read -r hotkey; do
         echo "read hotkey: " $hotkey
         if [ "$hotkey" = "FULLSCREENSWITCH_HOTKEY" ] ; then
@@ -258,26 +260,26 @@ deps_or_exit(){
 	#Local deps
 	for d in $DEPS_L ; do
 		if ! which $d &>/dev/null ; then
-			echo "[EE] Cannot find required local executable:" $d
+			print_error "Cannot find required local executable:" $d
 			ERROR=1
 		fi
 	done
 	for d in $DEPS_OPT_L ; do
 		if ! which $d &>/dev/null ; then
-			echo "[!!] Cannot find required optional executable:" $d
+			print_warning "Cannot find required optional executable:" $d
 		fi
 	done
 
 	#Remote deps
 	for d in $DEPS_R ; do
 		if ! $SSH_EXEC "which $d &>/dev/null" ; then
-			echo "[EE] Cannot find required remote executable:" $d
+			print_error "Cannot find required remote executable:" $d
 			ERROR=1
 		fi
 	done
 	
 	if [ "$ERROR" = "1" ] ; then
-		echo "[EE] Missing packages, cannot continue."
+		print_error "Missing packages, cannot continue."
 		exit
 	fi
 		
@@ -405,17 +407,17 @@ done
     RDISPLAY=":$RDISPLAY"
 
     if [ "$AUDIOENC" = "custom" ] && [ "$AUDIO_ENC_CUSTOM" = "" ] ; then
-		echo "[EE] Custom audioencoder requested, but no custom encoder string provided. use --customa <something>"
+		print_error "Custom audioencoder requested, but no custom encoder string provided. use --customa <something>"
 		exit
     fi
 
     if [ "$VIDEOENC" = "custom" ] && [ "$VIDEO_ENC_CUSTOM" = "" ] ; then
-		echo "[EE] Custom video encoder requested, but no custom encoder string provided. use --customv <something>"
+		print_error "Custom video encoder requested, but no custom encoder string provided. use --customv <something>"
 		exit
     fi
     
     if [ ! -f "$EVDFILE" ] ; then
-        echo "[EE] Input configuration file "$EVDFILE" not found!"
+        print_error "Input configuration file "$EVDFILE" not found!"
         echo "Please, Select which devices to share."
         sleep 2
         create_input_files
@@ -428,9 +430,9 @@ done
     [ ! "$SSH_CIPHER" = "" ] && SSH_CIPHER=" -c $SSH_CIPHER"
     SSH_EXEC="ssh $SSH_CIPHER -o ControlMaster=auto -o ControlPath=$SSH_CONTROL_PATH $RUSER@$RHOST -p $RPORT"
 
-echo "[..] Checking required executables"
+print_pending "Check required executables..."
 deps_or_exit
-echo "[OK] Checking required executables"
+print_ok "Checked required executables"
 echo 
 
 generate_ICFILE_from_names
@@ -447,16 +449,16 @@ generate_ICFILE_from_names
 #Measure network download speed?
 if [ "$VIDEO_BITRATE_MAX" = "AUTO" ] ; then
 	echo
-    echo "[..] Measuring network throughput..."
+    print_pending "Measuring network throughput..."
     VIDEO_BITRATE_MAX=$(benchmark_net)
     echo "[OK] VIDEO_BITRATE_MAX = "$VIDEO_BITRATE_MAX"Kbps"
   	VIDEO_BITRATE_MAX=$(( "$VIDEO_BITRATE_MAX" * "$VIDEO_BITRATE_MAX_SCALE" / 100 ))
-  	echo "[OK] Scaled Throughput ("$VIDEO_BITRATE_MAX_SCALE"%) = "$VIDEO_BITRATE_MAX"Kbps"
+  	print_ok "Scaled Throughput ("$VIDEO_BITRATE_MAX_SCALE"%) = "$VIDEO_BITRATE_MAX"Kbps"
      if [ $VIDEO_BITRATE_MAX -gt 294987 ] ; then
-        echo [!!] $VIDEO_BITRATE_MAX"Kbps" is too high!
+        print_pending "$VIDEO_BITRATE_MAX Kbps" is too high!
         VIDEO_BITRATE_MAX=100000 
     fi
-    echo "[!!] Using $VIDEO_BITRATE_MAX"Kbps
+    print_pending "Using $VIDEO_BITRATE_MAX Kbps"
     echo  
 fi
 
@@ -466,7 +468,7 @@ sleep 0.1 #(just to not shuffle output messages)
 PID1=$!
 
 echo
-echo "[..] Trying to connect to $RUSER@$RHOST:$RPORT"
+print_pending "Trying to connect to $RUSER@$RHOST:$RPORT"
 echo "     and stream display $DISPLAY"
 echo "     with size $RES and offset: $OFFSET"
 echo
@@ -478,18 +480,18 @@ echo
 
 #Guess audio capture device?
     if [ "$AUDIO_CAPTURE_SOURCE" = "guess" ] ; then
-		echo "[..] Guessing audio capture device"
+		print_pending "Guessing audio capture device"
         AUDIO_CAPTURE_SOURCE=$($SSH_EXEC echo '$(pacmd list | grep "<.*monitor>" |awk -F "[<>]" "{print \$2}" | tail -n 1)')
         # or: AUDIO_CAPTURE_SOURCE=$($SSH_EXEC echo '$(pactl list sources short|grep monitor|awk "{print \$2}" | head -n 1)
-        echo "[OK] Guessed audio capture source:" $AUDIO_CAPTURE_SOURCE
+        print_ok "Guessed audio capture source:" $AUDIO_CAPTURE_SOURCE
 		echo
     fi
 
 #Auto video grab size?
     if [ "$RES" = "auto" ] || [ "$RES" = "" ] ; then
-		echo "[..] Guessing remote resolution"
+		print_pending "Guessing remote resolution"
         RES=$($SSH_EXEC "export DISPLAY=$RDISPLAY ; xdpyinfo | awk '/dimensions:/ { print \$2; exit }'")
-        echo "[OK] Auto grab resolution: $RES"
+        print_ok "Auto grab resolution: $RES"
         echo
     fi
 
@@ -508,7 +510,7 @@ echo
 		#intelgpu)       
 			#VIDEO_ENC="$VIDEO_ENC_INTELGPU" ;;			
 		*)              
-			echo "[EE] Unsupported video encoder"
+			print_error "Unsupported video encoder"
 			exit ;;
 	esac 
 
@@ -521,12 +523,12 @@ echo
 		custom)
 			AUDIO_ENC="$AUDIO_ENC_CUSTOM" ;;
 		*)              
-			echo "[EE] Unsupported audio encoder"
+			print_error "Unsupported audio encoder"
 			exit ;;
 	esac 
 	
 #Grab Audio
-	echo [..] Start audio streaming...
+	print_pending "Start audio streaming..."
     $SSH_EXEC sh -c "\
         export DISPLAY=$RDISPLAY ;\
         $FFMPEGEXE -v quiet -nostdin -loglevel warning -y -f pulse -ac 2 -i "$AUDIO_CAPTURE_SOURCE"  -b:a "$AUDIO_BITRATE"k "$AUDIO_ENC" -f nut -\
@@ -534,7 +536,7 @@ echo
     PID4=$!
 
 #Grab Video
-	echo [..] Start video streaming...
+	print_pending "Start video streaming..."
 	if [ ! "$PRESCALE" = "" ] ; then SCALESTR="-sws_flags fast_bilinear -vf scale=$PRESCALE " ; fi
     $SSH_EXEC sh -c "\
         export DISPLAY=$RDISPLAY ;\
