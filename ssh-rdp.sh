@@ -5,6 +5,8 @@
 #	Remote audio: delay is still a bit high (less than 100ms)
 #	Understand why audio starts with a long delay unless
 #	we keep playing a stream in background (as we now do)
+#   * allow tho choose video player by command line
+#   * kill leftover ssh on client at exit
 
 #Requirements:
     #Local+Remote: ffmpeg,?????????????????,openssh,netevent-git
@@ -33,21 +35,27 @@
                    # If wrong, video grab will not work.
     OFFSET="+0,0"      # ex: OFFSET="" or OFFSET="+10,+40".
                    # If wrong, video grab will not work.
+	
 
-	VIDEOENC="cpu"   #cpu,amdgpu,nvgpu; intel still unsupported
-	AUDIOENC="opus"  #opus,pcm
+	VIDEO_ENC_CPU="-threads 1 -vcodec libx264 -thread_type slice -slices 1 -level 32 -preset ultrafast -tune zerolatency -intra-refresh 1 -x264opts vbv-bufsize=1:slice-max-size=1500:keyint=$FPS:sliced_threads=1 -pix_fmt nv12"
+	VIDEO_ENC_NVGPU="-threads 1 -c:v h264_nvenc -preset llhq -delay 0 -zerolatency 1"
+	VIDEO_ENC_AMDGPU="-threads 1 -vaapi_device /dev/dri/renderD128 -vf 'hwupload,scale_vaapi=format=nv12' -c:v h264_vaapi"
+	#VIDEO_ENC_INTELGPU="TBD"
+
+	AUDIO_ENC_OPUS="-acodec libopus -vbr off -application lowdelay"	#opus, low delay great quality
+	AUDIO_ENC_PCM="-acodec pcm_s16le "	#pcm, low delay, best quality
+	
+	VIDEOENC="cpu"
+	AUDIOENC="opus"
                    
-    AUDIO_BITRATE=128 #kbps
-    #Audio encoders:
-		AUDIO_ENC="-acodec libopus -vbr off -application lowdelay"	#opus, low delay great quality
-		#AUDIO_ENC="-acodec pcm_s16le "	#pcm, low delay, best quality
+	VIDEO_BITRATE_MAX="5000"  #kbps (or AUTO)
+    VIDEO_BITRATE_MAX_SCALE="80" # When VIDEO_BITRATE_MAX is set to "AUTO", only use this percentual of it.
+	AUDIO_BITRATE=128 #kbps
 
 	AUDIO_DELAY_COMPENSATION="4000" #The higher the value, the lower the audio delay.
                                     #Setting this too high will likely produce crackling sound.
                                     #Try in range 0-6000
-    VIDEO_BITRATE_MAX="5000"  #kbps (or AUTO)
-    VIDEO_BITRATE_MAX_SCALE="80" # When VIDEO_BITRATE_MAX is set to "AUTO", only use this percentual of it.
-	
+    
 	#Prescale desktop before sending?
 	PRESCALE="" # eg: "" or something like "1280x720"
 
@@ -61,11 +69,11 @@
 
     #mpv, less latency, possibly hardware decoding, hammers the cpu.
     VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=auto --title="$WTITLE" --untimed --no-cache --profile=low-latency --opengl-glfinish=yes --opengl-swapinterval=0"
-    	#older mpv versions, vaapi
-    	#VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=vaapi --vo=opengl --title="$WTITLE" --untimed --no-cache --audio-buffer=0  --vd-lavc-threads=1 --cache-pause=no --demuxer-lavf-o=fflags=+nobuffer --demuxer-lavf-analyzeduration=0.1 --video-sync=audio --interpolation=no  --opengl-glfinish=yes --opengl-swapinterval=0"
+    #older mpv versions, vaapi
+    #VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=vaapi --vo=opengl --title="$WTITLE" --untimed --no-cache --audio-buffer=0  --vd-lavc-threads=1 --cache-pause=no --demuxer-lavf-o=fflags=+nobuffer --demuxer-lavf-analyzeduration=0.1 --video-sync=audio --interpolation=no  --opengl-glfinish=yes --opengl-swapinterval=0"
 
     AUDIOPLAYER="ffplay - -nostats -loglevel warning -flags low_delay -nodisp -probesize 32 -fflags nobuffer+fastseek+flush_packets -analyzeduration 0 -sync ext -af aresample=async=1:min_comp=0.1:first_pts=$AUDIO_DELAY_COMPENSATION"
-    #AUDIOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-default-bindings=no --untimed --no-cache --profile=low-latency"
+
 
 # Misc
     SSH_CIPHER="" #Optionally, force an ssh cipher to be used
@@ -322,6 +330,9 @@ do
 		--audioenc)
 			AUDIOENC="$2"
 			shift ; shift ;;
+		#--videoplayer)
+		#	VIDEOPLAYER="$2"
+		#	shift ; shift ;;
 		-v|--vbitrate)
 			VIDEO_BITRATE_MAX="$2"
 			shift ; shift ;;
@@ -358,6 +369,7 @@ done
 		echo "-v, --vbitrate      video bitrate in kbps or AUTO"
 		echo "                    AUTO will use 80% of the maximum available throughput."
 		echo "-a, --abitrate      audio bitrate in kbps"
+		#echo "    --videoplayer   
         		
         echo "Example 1: john connecting to jserver, all defaults accepted"
         echo "    "$me" --user john --server jserver"
@@ -462,16 +474,18 @@ echo
         echo
     fi
 
+
+
 #Select video encoder:
 	case  $VIDEOENC  in
 		cpu)       
-			VIDEO_ENC="-threads 1 -vcodec libx264 -thread_type slice -slices 1 -level 32 -preset ultrafast -tune zerolatency -intra-refresh 1 -x264opts vbv-bufsize=1:slice-max-size=1500:keyint=$FPS:sliced_threads=1 -pix_fmt nv12" ;;
+			VIDEO_ENC="$VIDEO_ENC_CPU" ;;
 		nvgpu)
-			VIDEO_ENC="-threads 1 -c:v h264_nvenc -preset llhq -delay 0 -zerolatency 1" ;;            
+			VIDEO_ENC="$VIDEO_ENC_NVGPU" ;;            
 		amdgpu)       
-			VIDEO_ENC="-threads 1 -vaapi_device /dev/dri/renderD128 -vf 'hwupload,scale_vaapi=format=nv12' -c:v h264_vaapi" ;;
+			VIDEO_ENC="$VIDEO_ENC_AMDGPU" ;;
 		#intelgpu)       
-			#VIDEO_ENC="???" ;;			
+			#VIDEO_ENC="$VIDEO_ENC_INTELGPU" ;;			
 		*)              
 			echo "[EE] Unsupported video encoder"
 			exit ;;
@@ -480,9 +494,9 @@ echo
 #Select audio encoder:
 	case  $AUDIOENC  in
 		opus)       
-			AUDIO_ENC="" ;;
-		pcm16)
-			AUDIO_ENC="" ;;            	
+			AUDIO_ENC="$AUDIO_ENC_OPUS";;
+		pcm)
+			AUDIO_ENC="$AUDIO_ENC_PCM" ;;            	
 		*)              
 			echo "[EE] Unsupported audio encoder"
 			exit ;;
