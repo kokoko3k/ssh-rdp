@@ -6,7 +6,7 @@
 #	Understand why audio starts with a long delay unless
 #	we keep playing a stream in background (as we now do)
 #   * allow tho choose video player by command line
-#   * kill leftover ssh on client at exit
+#	Colored messages
 
 #Requirements:
     #Local+Remote: ffmpeg,?????????????????,openssh,netevent-git
@@ -36,7 +36,6 @@
     OFFSET="+0,0"      # ex: OFFSET="" or OFFSET="+10,+40".
                    # If wrong, video grab will not work.
 	
-
 	VIDEO_ENC_CPU="-threads 1 -vcodec libx264 -thread_type slice -slices 1 -level 32 -preset ultrafast -tune zerolatency -intra-refresh 1 -x264opts vbv-bufsize=1:slice-max-size=1500:keyint=$FPS:sliced_threads=1 -pix_fmt nv12"
 	VIDEO_ENC_NVGPU="-threads 1 -c:v h264_nvenc -preset llhq -delay 0 -zerolatency 1"
 	VIDEO_ENC_AMDGPU="-threads 1 -vaapi_device /dev/dri/renderD128 -vf 'hwupload,scale_vaapi=format=nv12' -c:v h264_vaapi"
@@ -189,6 +188,8 @@ list_descendants() {
 finish() {
     #echo ; echo TRAP: finish.
     kill $(list_descendants $$) &>/dev/null
+    #kill multiplexing ssh
+    ssh -O exit -o ControlPath="$SSH_CONTROL_PATH" $RHOST 2>/dev/null
     #ffplay and/or ffmpeg may hangs on remote, kill them by name
     $SSH_EXEC "killall $FFPLAYEXE" &>/dev/null
     $SSH_EXEC "killall $FFMPEGEXE" &>/dev/null
@@ -403,8 +404,7 @@ done
 
 #Setup SSH Multiplexing
 	SSH_CONTROL_PATH=$HOME/.config/ssh-rdp$$
-    ssh -fN -o ControlMaster=auto -o ControlPath=$SSH_CONTROL_PATH -o ControlPersist=300 $RUSER@$RHOST -p $RPORT
-
+    ssh -fN -o ControlMaster=auto -o ControlPath=$SSH_CONTROL_PATH -o ControlPersist=60 $RUSER@$RHOST -p $RPORT
 #Shortcut to start remote commands:
     [ ! "$SSH_CIPHER" = "" ] && SSH_CIPHER=" -c $SSH_CIPHER"
     SSH_EXEC="ssh $SSH_CIPHER -o ControlMaster=auto -o ControlPath=$SSH_CONTROL_PATH $RUSER@$RHOST -p $RPORT"
