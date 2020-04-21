@@ -14,7 +14,7 @@
     #Remote: xdpyinfo,pulseaudio
     #read/write access to input devices on local and remote system (input group) (sudo gpasswd --add username input)
 
-#Remote host (you can pass the following via command line in the format:  john@server:22:0.0)
+#Remote host
     RHOST="" # Remote ip or hostname
     RPORT="22"             # Remote ssh port to connect to
     RUSER=""             # The user on the remote side running the real X server
