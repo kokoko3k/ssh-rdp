@@ -9,7 +9,7 @@
 #	Colored messages
 
 #Requirements:
-    #Local+Remote: ffmpeg,?????????????????,openssh,netevent-git
+    #Local+Remote: ffmpeg,openssh,netevent-git
     #Local: inotify-tools, wmctrl, optional: mpv + taskset from util-linux to get even lower latency but with more cpu use.
     #Remote: xdpyinfo,pulseaudio
     #read/write access to input devices on local and remote system (input group) (sudo gpasswd --add username input)
@@ -17,8 +17,8 @@
 #Remote host
     RHOST="" # Remote ip or hostname
     RPORT="22"             # Remote ssh port to connect to
-    RUSER=""             # The user on the remote side running the real X server
-    RDISPLAY="0.0"          # The remote display (ex: 0.0)
+    RUSER=""               # The user on the remote side running the real X server
+    RDISPLAY="0.0"         # The remote display (ex: 0.0)
     EVDFILE="$HOME/.config/ssh-rdp.input.evd.config"  #Holds the name of the forwarded evdev device 
     KBDFILE="$HOME/.config/ssh-rdp.input.kbd.config"  #Holds the name of the forwarded keyboard evdev device
     HKFILE="$HOME/.config/ssh-rdp.input.hk.config"    #where the keypress codes to switch fullscreen and forward reside
@@ -107,7 +107,6 @@ generate_ICFILE_from_names() {
     read GRAB_HOTKEY FULLSCREENSWITCH_HOTKEY <<< $(<$HKFILE)
     echo [OK] GRAB_HOTKEY=$GRAB_HOTKEY
     echo [OK] FULLSCREENSWITCH_HOTKEY=$FULLSCREENSWITCH_HOTKEY
-
 }
 
 name_from_event(){
@@ -115,7 +114,6 @@ name_from_event(){
 	#Logitech G203 Prodigy Gaming Mouse
 	grep 'Name=\|Handlers' /proc/bus/input/devices|grep -B1 "$1"|head -n 1|cut -d \" -f 2
 }
-
 
 events_from_name(){
 	#es: vents_from_name Logitech G203 Prodigy Gaming Mouse
@@ -329,6 +327,15 @@ do
 		--audioenc)
 			AUDIOENC="$2"
 			shift ; shift ;;
+		--customv)
+			VIDEO_ENC_CUSTOM="$2"
+			shift ; shift ;;
+		--customa)
+			AUDIO_ENC_CUSTOM="$2"
+			shift ; shift ;;
+		--audioenc)
+			AUDIOENC="$2"
+			shift ; shift ;;
 		#--videoplayer)
 		#	VIDEOPLAYER="$2"
 		#	shift ; shift ;;
@@ -363,13 +370,17 @@ done
 		echo "    --prescale      scale video before encoding (eg: 1280x720)"
 		echo "                    Has impact on remote cpu use and can increase latency too."
 		echo "-f, --fps           grabbed frames per second"
-		echo "    --videoenc      Video encoder can be cpu,amdgpu and nvgpu (intel gpu still unsupported)"
-		echo "    --audioenc      Audio encoder can be opus or pcm"
+		echo "    --videoenc      Video encoder can be: cpu,amdgpu,nvgpu or custom (intel gpu still unsupported)"
+		echo "      --customv     Specify a string for video encoder stuff when videoenc is set to custom"
+		echo "                    eg: \"-threads 1 -c:v h264_nvenc -preset llhq -delay 0 -zerolatency 1\""
+		echo "    --audioenc      Audio encoder can be: opus,pcm or custom"
+		echo "      --customa     Specify a string for audio encoder stuff when videoenc is set to custom"
+		echo "                    eg: \"-acodec libopus -vbr off -application lowdelay\""
 		echo "-v, --vbitrate      video bitrate in kbps or AUTO"
 		echo "                    AUTO will use 80% of the maximum available throughput."
 		echo "-a, --abitrate      audio bitrate in kbps"
 		#echo "    --videoplayer   
-        		
+		echo
         echo "Example 1: john connecting to jserver, all defaults accepted"
         echo "    "$me" --user john --server jserver"
         echo 
@@ -393,6 +404,16 @@ done
     fi
     RDISPLAY=":$RDISPLAY"
 
+    if [ "$AUDIOENC" = "custom" ] && [ "$AUDIO_ENC_CUSTOM" = "" ] ; then
+		echo "[EE] Custom audioencoder requested, but no custom encoder string provided. use --customa <something>"
+		exit
+    fi
+
+    if [ "$VIDEOENC" = "custom" ] && [ "$VIDEO_ENC_CUSTOM" = "" ] ; then
+		echo "[EE] Custom video encoder requested, but no custom encoder string provided. use --customv <something>"
+		exit
+    fi
+    
     if [ ! -f "$EVDFILE" ] ; then
         echo "[EE] Input configuration file "$EVDFILE" not found!"
         echo "Please, Select which devices to share."
@@ -482,6 +503,8 @@ echo
 			VIDEO_ENC="$VIDEO_ENC_NVGPU" ;;            
 		amdgpu)       
 			VIDEO_ENC="$VIDEO_ENC_AMDGPU" ;;
+		custom)
+			VIDEO_ENC="$VIDEO_ENC_CUSTOM" ;;
 		#intelgpu)       
 			#VIDEO_ENC="$VIDEO_ENC_INTELGPU" ;;			
 		*)              
@@ -495,6 +518,8 @@ echo
 			AUDIO_ENC="$AUDIO_ENC_OPUS";;
 		pcm)
 			AUDIO_ENC="$AUDIO_ENC_PCM" ;;            	
+		custom)
+			AUDIO_ENC="$AUDIO_ENC_CUSTOM" ;;
 		*)              
 			echo "[EE] Unsupported audio encoder"
 			exit ;;
