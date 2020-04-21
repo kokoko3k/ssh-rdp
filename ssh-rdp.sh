@@ -458,7 +458,7 @@ if [ "$VIDEO_BITRATE_MAX" = "AUTO" ] ; then
         print_pending "$VIDEO_BITRATE_MAX Kbps" is too high!
         VIDEO_BITRATE_MAX=100000 
     fi
-    print_pending "Using $VIDEO_BITRATE_MAX Kbps"
+    print_warning "Using $VIDEO_BITRATE_MAX Kbps"
     echo  
 fi
 
@@ -483,7 +483,7 @@ echo
 		print_pending "Guessing audio capture device"
         AUDIO_CAPTURE_SOURCE=$($SSH_EXEC echo '$(pacmd list | grep "<.*monitor>" |awk -F "[<>]" "{print \$2}" | tail -n 1)')
         # or: AUDIO_CAPTURE_SOURCE=$($SSH_EXEC echo '$(pactl list sources short|grep monitor|awk "{print \$2}" | head -n 1)
-        print_ok "Guessed audio capture source:" $AUDIO_CAPTURE_SOURCE
+        print_warning "Guessed audio capture source: $AUDIO_CAPTURE_SOURCE"
 		echo
     fi
 
@@ -491,7 +491,7 @@ echo
     if [ "$RES" = "auto" ] || [ "$RES" = "" ] ; then
 		print_pending "Guessing remote resolution"
         RES=$($SSH_EXEC "export DISPLAY=$RDISPLAY ; xdpyinfo | awk '/dimensions:/ { print \$2; exit }'")
-        print_ok "Auto grab resolution: $RES"
+        print_warning "Auto grab resolution: $RES"
         echo
     fi
 
