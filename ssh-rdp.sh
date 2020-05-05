@@ -441,7 +441,6 @@ print_pending "Checking required executables..."
 deps_or_exit
 print_ok "Checked required executables"
 echo
-exit
 
 generate_ICFILE_from_names
 
