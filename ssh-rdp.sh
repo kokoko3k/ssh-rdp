@@ -186,8 +186,6 @@ list_descendants() {
 finish() {
     #echo ; echo TRAP: finish.
     kill $(list_descendants $$) &>/dev/null
-    #kill multiplexing ssh
-    ssh -O exit -o ControlPath="$SSH_CONTROL_PATH" $RHOST 2>/dev/null
     #ffplay and/or ffmpeg may hangs on remote, kill them by name
     $SSH_EXEC "killall $FFPLAYEXE" &>/dev/null
     $SSH_EXEC "killall $FFMPEGEXE" &>/dev/null
@@ -196,9 +194,10 @@ finish() {
     $SSH_EXEC "killall -9 $FFMPEGEXE" &>/dev/null
     $SSH_EXEC "unlink $FFMPEGEXE" &>/dev/null
     $SSH_EXEC "unlink $FFPLAYEXE" &>/dev/null
+    #kill multiplexing ssh
+    ssh -O exit -o ControlPath="$SSH_CONTROL_PATH" $RHOST 2>/dev/null
     rm $NESCRIPT &>/dev/null
 }
-trap finish INT TERM EXIT
 
 #Test and report net download speed
 benchmark_net() {
@@ -353,6 +352,7 @@ do
 done
 
 
+
 #Sanity check
     me=$(basename "$0")
     if [ -z $RUSER ] || [ -z $RHOST ] || [ "$1" = "-h" ] ; then
@@ -423,17 +423,25 @@ done
         create_input_files
     fi
 
+trap finish INT TERM EXIT
+    
 #Setup SSH Multiplexing
 	SSH_CONTROL_PATH=$HOME/.config/ssh-rdp$$
-    ssh -fN -o ControlMaster=auto -o ControlPath=$SSH_CONTROL_PATH -o ControlPersist=60 $RUSER@$RHOST -p $RPORT
+	print_pending "Starting ssh multiplexed connection"
+    if ssh -fN -o ControlMaster=auto -o ControlPath=$SSH_CONTROL_PATH -o ControlPersist=60 $RUSER@$RHOST -p $RPORT ; then
+		print_ok "Started ssh multiplexed connection"
+			else
+		print_warning "Cannot start ssh multiplexed connection"
+	fi
 #Shortcut to start remote commands:
     [ ! "$SSH_CIPHER" = "" ] && SSH_CIPHER=" -c $SSH_CIPHER"
     SSH_EXEC="ssh $SSH_CIPHER -o ControlMaster=auto -o ControlPath=$SSH_CONTROL_PATH $RUSER@$RHOST -p $RPORT"
 
-print_pending "Check required executables..."
+print_pending "Checking required executables..."
 deps_or_exit
 print_ok "Checked required executables"
-echo 
+echo
+exit
 
 generate_ICFILE_from_names
 
