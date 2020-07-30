@@ -29,7 +29,7 @@
                    # If wrong, video grab will not work.
     OFFSET="+0,0"  # ex: OFFSET="" or OFFSET="+10,+40".
                    # If wrong, video grab will not work.
-	
+
 	VIDEO_ENC_CPU="-threads 1 -vcodec libx264 -thread_type slice -slices 1 -level 32 -preset ultrafast -tune zerolatency -intra-refresh 1 -x264opts vbv-bufsize=1:slice-max-size=1500:keyint=$FPS:sliced_threads=1 -pix_fmt nv12"
 	VIDEO_ENC_NVGPU="-threads 1 -c:v h264_nvenc -preset llhq -delay 0 -zerolatency 1"
 	VIDEO_ENC_AMDGPU="-threads 1 -vaapi_device /dev/dri/renderD128 -vf 'hwupload,scale_vaapi=format=nv12' -c:v h264_vaapi"
@@ -37,10 +37,10 @@
 
 	AUDIO_ENC_OPUS="-acodec libopus -vbr off -application lowdelay"	#opus, low delay great quality
 	AUDIO_ENC_PCM="-acodec pcm_s16le "	#pcm, low delay, best quality
-	
+
 	VIDEOENC="cpu"
 	AUDIOENC="opus"
-                   
+
 	VIDEO_BITRATE_MAX="5000"  #kbps (or AUTO)
     VIDEO_BITRATE_MAX_SCALE="80" # When VIDEO_BITRATE_MAX is set to "AUTO", only use this percentual of it.
 	AUDIO_BITRATE=128 #kbps
@@ -48,14 +48,14 @@
 	AUDIO_DELAY_COMPENSATION="4000" #The higher the value, the lower the audio delay.
                                     #Setting this too high will likely produce crackling sound.
                                     #Try in range 0-6000
-    
+
 	#Prescale desktop before sending?
 	PRESCALE="" # eg: "" or something like "1280x720"
 
 	#Remote window title
     #WTITLE="$RUSER@$RHOST""$RDISPLAY"
     WTITLE="ssh-rdp""-"\["$$"\]
-    
+
 # Decoding
     #ffplay, low latency, no hardware decoding
     #VIDEOPLAYER="ffplay - -nostats -window_title "$WTITLE" -probesize 32 -flags low_delay -framedrop  -fflags nobuffer+fastseek+flush_packets -analyzeduration 0 -sync ext"
@@ -170,7 +170,7 @@ create_input_files() {
 		echo
 		echo GRAB_HOTKEY=$GRAB_HOTKEY
 		echo FULLSCREENSWITCH_HOTKEY=$FULLSCREENSWITCH_HOTKEY
-		
+
 	rm $tmpfile
 }
 
@@ -197,6 +197,7 @@ finish() {
     #kill multiplexing ssh
     ssh -O exit -o ControlPath="$SSH_CONTROL_PATH" $RHOST 2>/dev/null
     rm $NESCRIPT &>/dev/null
+	rm $NE_CMD_SOCK&>/dev/null
 }
 
 #Test and report net download speed
@@ -232,8 +233,8 @@ setup_input_loop() {
     echo "use myremote" >>$NESCRIPT
 
     echo 
-    print_pending "Starting netevent daemon"
-    netevent daemon -s $NESCRIPT netevent-command.sock | while read -r hotkey; do
+    print_pending "Starting netevent daemon with script $NESCRIPT"
+    netevent daemon -s $NESCRIPT $NE_CMD_SOCK | while read -r hotkey; do
         echo "read hotkey: " $hotkey
         if [ "$hotkey" = "FULLSCREENSWITCH_HOTKEY" ] ; then
             if [ "$FS" = "F" ] ; then
@@ -444,8 +445,9 @@ echo
 
 generate_ICFILE_from_names
 
-#netevent script file
+#netevent script file and command sock
     NESCRIPT=/tmp/nescript$$
+	NE_CMD_SOCK=/tmp/neteventcommandsock$$
 
 #We need to kill some processes on exit, do it by name.
     FFMPEGEXE=/tmp/ffmpeg$$
