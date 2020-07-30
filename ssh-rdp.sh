@@ -185,7 +185,7 @@ list_descendants() {
 #Clean function
 finish() {
     #echo ; echo TRAP: finish.
-    kill $(list_descendants $$) &>/dev/null
+
     #ffplay and/or ffmpeg may hangs on remote, kill them by name
     $SSH_EXEC "killall $FFPLAYEXE" &>/dev/null
     $SSH_EXEC "killall $FFMPEGEXE" &>/dev/null
@@ -196,6 +196,9 @@ finish() {
     $SSH_EXEC "unlink $FFPLAYEXE" &>/dev/null
     #kill multiplexing ssh
     ssh -O exit -o ControlPath="$SSH_CONTROL_PATH" $RHOST 2>/dev/null
+    
+    kill $(list_descendants $$) &>/dev/null
+    
     rm $NESCRIPT &>/dev/null
 	rm $NE_CMD_SOCK&>/dev/null
 }
