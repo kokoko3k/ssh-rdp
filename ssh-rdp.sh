@@ -187,16 +187,19 @@ finish() {
     #echo ; echo TRAP: finish.
 
     #ffplay and/or ffmpeg may hangs on remote, kill them by name
-    $SSH_EXEC "killall $FFPLAYEXE" &>/dev/null
-    $SSH_EXEC "killall $FFMPEGEXE" &>/dev/null
+#    $SSH_EXEC "killall $FFPLAYEXE" &>/dev/null
+#    $SSH_EXEC "killall $FFMPEGEXE" &>/dev/null
+    $SSH_EXEC "kill \$(pidof FFPLAYEXE)" &>/dev/null
+    $SSH_EXEC "kill \$(pidof $FFMPEGEXE)" &>/dev/null
     sleep 1
-	$SSH_EXEC "killall -9 $FFPLAYEXE" &>/dev/null
-    $SSH_EXEC "killall -9 $FFMPEGEXE" &>/dev/null
+#	$SSH_EXEC "killall -9 $FFPLAYEXE" &>/dev/null
+#   $SSH_EXEC "killall -9 $FFMPEGEXE" &>/dev/null
+	$SSH_EXEC "kill -9 \$(pidof $FFPLAYEXE)" &>/dev/null
+    $SSH_EXEC "kill -9 \$(pidof $FFMPEGEXE)" &>/dev/null
     $SSH_EXEC "unlink $FFMPEGEXE" &>/dev/null
     $SSH_EXEC "unlink $FFPLAYEXE" &>/dev/null
     #kill multiplexing ssh
     ssh -O exit -o ControlPath="$SSH_CONTROL_PATH" $RHOST 2>/dev/null
-    
     kill $(list_descendants $$) &>/dev/null
     
     rm $NESCRIPT &>/dev/null
