@@ -503,7 +503,7 @@ echo
     fi
 
 #Auto video grab size?
-    if [ "$RES" = "auto" ] || [ "$RES" = "" ] ; then
+    if [ "$RES" = "AUTO" ] || [ "$RES" = "" ] ; then
 		print_pending "Guessing remote resolution"
         RES=$($SSH_EXEC "export DISPLAY=$RDISPLAY ; xdpyinfo | awk '/dimensions:/ { print \$2; exit }'")
         print_warning "Auto grab resolution: $RES"
