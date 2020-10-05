@@ -33,7 +33,7 @@
 	VIDEO_ENC_CPU="-threads 1 -vcodec libx264 -thread_type slice -slices 1 -level 32 -preset ultrafast -tune zerolatency -intra-refresh 1 -x264opts vbv-bufsize=1:slice-max-size=1500:keyint=$FPS:sliced_threads=1 -pix_fmt nv12"
 	VIDEO_ENC_NVGPU="-threads 1 -c:v h264_nvenc -preset llhq -delay 0 -zerolatency 1"
 	VIDEO_ENC_AMDGPU="-threads 1 -vaapi_device /dev/dri/renderD128 -vf 'hwupload,scale_vaapi=format=nv12' -c:v h264_vaapi"
-	#VIDEO_ENC_INTELGPU="TBD"
+	VIDEO_ENC_INTELGPU=$VIDEO_ENC_AMDGPU #<-as it is basically vaapi.
 
 	AUDIO_ENC_OPUS="-acodec libopus -vbr off -application lowdelay"	#opus, low delay great quality
 	AUDIO_ENC_PCM="-acodec pcm_s16le "	#pcm, low delay, best quality
@@ -379,7 +379,7 @@ done
 		echo "    --prescale      scale video before encoding (eg: 1280x720)"
 		echo "                    Has impact on remote cpu use and can increase latency too."
 		echo "-f, --fps           grabbed frames per second"
-		echo "    --videoenc      Video encoder can be: cpu,amdgpu,nvgpu or custom (intel gpu still unsupported)"
+		echo "    --videoenc      Video encoder can be: cpu,amdgpu,intelgpu,nvgpu or custom"
 		echo "      --customv     Specify a string for video encoder stuff when videoenc is set to custom"
 		echo "                    eg: \"-threads 1 -c:v h264_nvenc -preset llhq -delay 0 -zerolatency 1\""
 		echo "    --audioenc      Audio encoder can be: opus,pcm or custom"
@@ -522,8 +522,8 @@ echo
 			VIDEO_ENC="$VIDEO_ENC_AMDGPU" ;;
 		custom)
 			VIDEO_ENC="$VIDEO_ENC_CUSTOM" ;;
-		#intelgpu)       
-			#VIDEO_ENC="$VIDEO_ENC_INTELGPU" ;;			
+		intelgpu)       
+			VIDEO_ENC="$VIDEO_ENC_INTELGPU" ;;			
 		*)              
 			print_error "Unsupported video encoder"
 			exit ;;
