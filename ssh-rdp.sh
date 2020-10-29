@@ -30,10 +30,11 @@
     OFFSET="+0,0"  # ex: OFFSET="" or OFFSET="+10,+40".
                    # If wrong, video grab will not work.
 
-	VIDEO_ENC_CPU="-threads 1 -vcodec libx264 -thread_type slice -slices 1 -level 32 -preset ultrafast -tune zerolatency -intra-refresh 1 -x264opts vbv-bufsize=1:slice-max-size=1500:keyint=$FPS:sliced_threads=1 -pix_fmt nv12"
-	VIDEO_ENC_NVGPU="-threads 1 -c:v h264_nvenc -preset llhq -delay 0 -zerolatency 1"
-	VIDEO_ENC_AMDGPU="-threads 1 -vaapi_device /dev/dri/renderD128 -vf 'hwupload,scale_vaapi=format=nv12' -c:v h264_vaapi"
-	VIDEO_ENC_INTELGPU="-threads 1 -vaapi_device /dev/dri/renderD128 -vf 'format=nv12,hwupload' -c:v h264_vaapi"
+	#The "null,null" video filters will be changed to -vf scale by sed later on if prescale is requested
+	VIDEO_ENC_CPU="-threads 1 -vcodec libx264 -thread_type slice -slices 1 -level 32 -preset ultrafast -tune zerolatency -intra-refresh 1 -x264opts vbv-bufsize=1:slice-max-size=1500:keyint=$FPS:sliced_threads=1 -pix_fmt nv12 -vf 'null,null'"
+	VIDEO_ENC_NVGPU="-threads 1 -c:v h264_nvenc -preset llhq -delay 0 -zerolatency 1 -vf 'null,null'"
+	VIDEO_ENC_AMDGPU="-threads 1 -vaapi_device /dev/dri/renderD128 -c:v h264_vaapi -vf 'null,null,hwupload,scale_vaapi=format=nv12'"
+	VIDEO_ENC_INTELGPU="-threads 1 -vaapi_device /dev/dri/renderD128 -c:v h264_vaapi -vf 'null,null,format=nv12,hwupload'"
 
 	AUDIO_ENC_OPUS="-acodec libopus -vbr off -application lowdelay"	#opus, low delay great quality
 	AUDIO_ENC_PCM="-acodec pcm_s16le "	#pcm, low delay, best quality
@@ -541,6 +542,11 @@ echo
 			print_error "Unsupported audio encoder"
 			exit ;;
 	esac 
+
+#Insert the scale filter by replacing the dummy filters null,null.	
+	if [ ! "$PRESCALE" = "" ] ; then 
+		VIDEO_ENC=$(sed "s/null,null/scale=$PRESCALE/" <<< "$VIDEO_ENC")
+	fi
 	
 #Grab Audio
 	print_pending "Start audio streaming..."
@@ -552,10 +558,10 @@ echo
 
 #Grab Video
 	print_pending "Start video streaming..."
-	if [ ! "$PRESCALE" = "" ] ; then SCALESTR="-sws_flags fast_bilinear -vf scale=$PRESCALE " ; fi
+
     $SSH_EXEC sh -c "\
         export DISPLAY=$RDISPLAY ;\
-        $FFMPEGEXE -nostdin -loglevel warning -y -f x11grab -r $FPS -framerate $FPS -video_size $RES -i "$RDISPLAY""$OFFSET" $SCALESTR -b:v "$VIDEO_BITRATE_MAX"k  -maxrate "$VIDEO_BITRATE_MAX"k \
+        $FFMPEGEXE -nostdin -loglevel warning -y -f x11grab -r $FPS -framerate $FPS -video_size $RES -i "$RDISPLAY""$OFFSET" -sws_flags fast_bilinear -b:v "$VIDEO_BITRATE_MAX"k  -maxrate "$VIDEO_BITRATE_MAX"k \
         "$VIDEO_ENC" -f_strict experimental -syncpoints none -f nut -\
     " | $VIDEOPLAYER
 
