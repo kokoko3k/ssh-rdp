@@ -53,6 +53,9 @@
 	#Prescale desktop before sending?
 	PRESCALE="" # eg: "" or something like "1280x720"
 
+	#Prescaling quality see https://ffmpeg.org/ffmpeg-scaler.html for possible values
+	SCALE_FLT="fast_bilinear" #bilinear,bicubic,lanczos,spline...
+	
 	#Remote window title
     #WTITLE="$RUSER@$RHOST""$RDISPLAY"
     WTITLE="ssh-rdp""-"\["$$"\]
@@ -561,7 +564,7 @@ echo
 
     $SSH_EXEC sh -c "\
         export DISPLAY=$RDISPLAY ;\
-        $FFMPEGEXE -nostdin -loglevel warning -y -f x11grab -r $FPS -framerate $FPS -video_size $RES -i "$RDISPLAY""$OFFSET" -sws_flags fast_bilinear -b:v "$VIDEO_BITRATE_MAX"k  -maxrate "$VIDEO_BITRATE_MAX"k \
+        $FFMPEGEXE -nostdin -loglevel warning -y -f x11grab -r $FPS -framerate $FPS -video_size $RES -i "$RDISPLAY""$OFFSET" -sws_flags $SCALE_FLT -b:v "$VIDEO_BITRATE_MAX"k  -maxrate "$VIDEO_BITRATE_MAX"k \
         "$VIDEO_ENC" -f_strict experimental -syncpoints none -f nut -\
     " | $VIDEOPLAYER
 
