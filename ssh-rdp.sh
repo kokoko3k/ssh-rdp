@@ -64,7 +64,7 @@
     #ffplay, low latency, no hardware decoding
     #VIDEOPLAYER="ffplay - -nostats -window_title "$WTITLE" -probesize 32 -flags low_delay -framedrop  -fflags nobuffer+fastseek+flush_packets -analyzeduration 0 -sync ext"
 
-    #mpv, less latency, possibly hardware decoding, hammers the cpu.
+    #mpv, less latency, possibly hardware decoding, may hammer the cpu.
     VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=auto --title="$WTITLE" --untimed --no-cache --profile=low-latency --opengl-glfinish=yes --opengl-swapinterval=0"
     #older mpv versions, vaapi
     #VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=vaapi --vo=gpu --gpu-api=opengl --title="$WTITLE" --untimed --no-cache --audio-buffer=0  --vd-lavc-threads=1 --cache-pause=no --demuxer-lavf-o=fflags=+nobuffer --demuxer-lavf-analyzeduration=0.1 --video-sync=audio --interpolation=no  --opengl-glfinish=yes --opengl-swapinterval=0"
@@ -263,8 +263,8 @@ setup_input_loop() {
 deps_or_exit(){
 	#Check that dependancies are ok, or exits the script
 	ERROR=0
-	DEPS_L="bash grep head cut timeout sleep tee inotifywait netevent wc wmctrl awk basename ssh ffplay ["
-	DEPS_OPT_L="mpv"
+	DEPS_L="bash grep head cut timeout sleep tee inotifywait netevent wc wmctrl awk basename ssh ffplay mpv ["
+	DEPS_OPT_L=""
 	DEPS_R="bash timeout dd ffmpeg pacmd grep awk tail xdpyinfo"
 
 	#Local deps
@@ -521,6 +521,7 @@ echo
 		cpu)       
 			VIDEO_ENC="$VIDEO_ENC_CPU" ;;
 		nvgpu)
+
 			VIDEO_ENC="$VIDEO_ENC_NVGPU" ;;            
 		amdgpu)       
 			VIDEO_ENC="$VIDEO_ENC_AMDGPU" ;;
@@ -559,6 +560,7 @@ echo
     " | $AUDIOPLAYER &
     PID4=$!
 
+
 #Grab Video
 	print_pending "Start video streaming..."
 
@@ -581,7 +583,7 @@ echo
 
 #    $SSH_EXEC sh -c "\
 #		;
- #       $FFMPEGEXE -nostdin  -loglevel warning  -y -framerate $FPS -f kmsgrab -i -  -sws_flags $SCALE_FLT -b:v "$VIDEO_BITRATE_MAX"k -maxrate "$VIDEO_BITRATE_MAX"k \
-#        -vf hwmap=derive_device=vaapi,crop="$RES:$OFFSET",scale_vaapi="$NEWRES":format=nv12 -c:v h264_vaapi -f_strict experimental -syncpoints none -f nut -\
+#       $FFMPEGEXE -nostdin  -loglevel warning  -y -framerate $FPS -f kmsgrab -i -  -sws_flags $SCALE_FLT -b:v "$VIDEO_BITRATE_MAX"k -maxrate "$VIDEO_BITRATE_MAX"k \
+#        -vf hwmap=derive_device=vaapi,crop="$RES:$OFFSET",scale_vaapi="$NEWRES":format=nv12 -c:v h264_vaapi -bf 0 -f_strict experimental -syncpoints none -f nut -\
 #    " | $VIDEOPLAYER
 
