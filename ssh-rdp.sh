@@ -33,8 +33,8 @@
 	#The "null,null" video filters will be changed to -vf scale by sed later on if prescale is requested
 	VIDEO_ENC_CPU="-threads 1 -vcodec libx264 -thread_type slice -slices 1 -level 32 -preset ultrafast -tune zerolatency -intra-refresh 1 -x264opts vbv-bufsize=1:slice-max-size=1500:keyint=$FPS:sliced_threads=1 -pix_fmt nv12 -vf 'null,null'"
 	VIDEO_ENC_NVGPU="-threads 1 -c:v h264_nvenc -preset llhq -delay 0 -zerolatency 1 -vf 'null,null'"
-	VIDEO_ENC_AMDGPU="-threads 1 -vaapi_device /dev/dri/renderD128 -c:v h264_vaapi -vf 'null,null,hwupload,scale_vaapi=format=nv12'"
-	VIDEO_ENC_INTELGPU="-threads 1 -vaapi_device /dev/dri/renderD128 -c:v h264_vaapi -vf 'null,null,format=nv12,hwupload'"
+	VIDEO_ENC_AMDGPU="-threads 1 -vaapi_device /dev/dri/renderD128 -c:v h264_vaapi -g 1 -vf 'null,null,hwupload,scale_vaapi=format=nv12'"
+	VIDEO_ENC_INTELGPU="-threads 1 -vaapi_device /dev/dri/renderD128 -c:v h264_vaapi -g 1 -vf 'null,null,format=nv12,hwupload'"
 
 	AUDIO_ENC_OPUS="-acodec libopus -vbr off -application lowdelay"	#opus, low delay great quality
 	AUDIO_ENC_PCM="-acodec pcm_s16le "	#pcm, low delay, best quality
