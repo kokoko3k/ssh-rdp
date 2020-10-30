@@ -564,8 +564,24 @@ echo
 
     $SSH_EXEC sh -c "\
         export DISPLAY=$RDISPLAY ;\
-        $FFMPEGEXE -nostdin -loglevel warning -y -f x11grab -r $FPS -framerate $FPS -video_size $RES -i "$RDISPLAY""$OFFSET" -sws_flags $SCALE_FLT -b:v "$VIDEO_BITRATE_MAX"k  -maxrate "$VIDEO_BITRATE_MAX"k \
+        $FFMPEGEXE -nostdin -loglevel warning -y -f x11grab -framerate $FPS -video_size $RES -i "$RDISPLAY""$OFFSET" -sws_flags $SCALE_FLT -b:v "$VIDEO_BITRATE_MAX"k  -maxrate "$VIDEO_BITRATE_MAX"k \
         "$VIDEO_ENC" -f_strict experimental -syncpoints none -f nut -\
     " | $VIDEOPLAYER
 
+
+#Zero copy test:
+#	RES=$(sed "s/\x/\:/" <<< "$RES")
+#	OFFSET=$(sed "s/\+//" <<< "$OFFSET")
+#	OFFSET=$(sed "s/\,/:/" <<< "$OFFSET")
+#	if [ ! "$PRESCALE" = "" ] ; then 
+#		NEWRES=$(sed "s/\x/\:/" <<< "$PRESCALE")
+#			else
+#		NEWRES=$RES
+#	fi
+
+#    $SSH_EXEC sh -c "\
+#		;
+ #       $FFMPEGEXE -nostdin  -loglevel warning  -y -framerate $FPS -f kmsgrab -i -  -sws_flags $SCALE_FLT -b:v "$VIDEO_BITRATE_MAX"k -maxrate "$VIDEO_BITRATE_MAX"k \
+#        -vf hwmap=derive_device=vaapi,crop="$RES:$OFFSET",scale_vaapi="$NEWRES":format=nv12 -c:v h264_vaapi -f_strict experimental -syncpoints none -f nut -\
+#    " | $VIDEOPLAYER
 
