@@ -62,7 +62,7 @@
 
 # Decoding
     #ffplay, low latency, no hardware decoding
-		#VIDEOPLAYER="ffplay - -nostats -window_title "$WTITLE" -probesize 32 -flags low_delay -framedrop  -fflags nobuffer+fastseek+flush_packets -analyzeduration 0 -sync ext"
+		#VIDEOPLAYER="ffplay -  -vf "setpts=0.5*PTS" -nostats -window_title "$WTITLE" -probesize 32 -flags low_delay -framedrop  -fflags nobuffer+fastseek+flush_packets -analyzeduration 0 -sync ext"
 
     #mpv, less latency, possibly hardware decoding, may hammer the cpu.
 		#Untimed:
