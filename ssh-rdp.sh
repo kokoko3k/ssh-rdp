@@ -34,7 +34,8 @@
 	VIDEO_ENC_CPU="-threads 1 -vcodec libx264 -thread_type slice -slices 1 -level 32 -preset ultrafast -tune zerolatency -intra-refresh 1 -x264opts vbv-bufsize=1:slice-max-size=1500:keyint=$FPS:sliced_threads=1 -pix_fmt nv12 -vf 'null,null'"
 	VIDEO_ENC_NVGPU="-threads 1 -c:v h264_nvenc -preset llhq -delay 0 -zerolatency 1"
 	VIDEO_ENC_AMDGPU="-threads 1 -vaapi_device /dev/dri/renderD128 -c:v h264_vaapi -bf 0 -vf 'null,null,hwupload,scale_vaapi=format=nv12'"
-	VIDEO_ENC_INTELGPU="-threads 1 -vaapi_device /dev/dri/renderD128 -c:v h264_vaapi -bf 0 -vf 'null,null,format=nv12,hwupload'"
+	VIDEO_ENC_INTELGPU="-threads 1 -vaapi_device /dev/dri/renderD128 -c:v h264_vaapi -bf 0 -vf 'null,null,hwupload,scale_vaapi=format=nv12'"
+	#VIDEO_ENC_INTELGPU="-threads 1 -vaapi_device /dev/dri/renderD128 -c:v h264_vaapi -bf 0 -vf 'null,null,format=nv12,hwupload'"
 
 	AUDIO_ENC_OPUS="-acodec libopus -vbr off -application lowdelay"	#opus, low delay great quality
 	AUDIO_ENC_PCM="-acodec pcm_s16le "	#pcm, low delay, best quality
@@ -411,7 +412,13 @@ done
         echo "    remote setup is dual head and john selects the right monitor."
         echo "    Stream will be 128kbps for audio and 10000kbps for video:"
         echo "    Ex: $me -u john -s jserver -p 322 -d 0.0 -r 1920x1080 -o +1920,0 -f 60 -a 128 -v 10000"
-        echo
+        echo 
+        echo "Example 3:"
+        echo "    Bill connecting to jserver on ssh port 322, streaming the display 0.0"
+        echo "    Stream will be 128kbps for audio and 10000kbps for video:"
+		echo "    Bill wants untouched audio, 144fps and encode via intelgpu, he needs to correct video output levels"
+        echo "    Ex: $me -u bill -s bserver -p 322 -d 0.0 -f 144 -v 80000 --audioenc pcm --videoenc intelgpu --vplayeropts \"--video-output-levels=limited\""
+        echo 
         echo "user and host are mandatory."
         echo "default ssh-port: $RPORT"
         echo "default DISPLAY : $RDISPLAY"
