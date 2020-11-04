@@ -60,27 +60,6 @@
     #WTITLE="$RUSER@$RHOST""$RDISPLAY"
     WTITLE="ssh-rdp""-"\["$$"\]
 
-# Decoding
-    #ffplay, low latency, no hardware decoding
-		#VIDEOPLAYER="ffplay -  -vf "setpts=0.5*PTS" -nostats -window_title "$WTITLE" -probesize 32 -flags low_delay -framedrop  -fflags nobuffer+fastseek+flush_packets -analyzeduration 0 -sync ext"
-
-    #mpv, less latency, possibly hardware decoding, may hammer the cpu.
-		#Untimed:
-			#VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=auto --title="$WTITLE" --untimed --no-cache --profile=low-latency --opengl-glfinish=yes --opengl-swapinterval=0"
-		
-		#speed=2 instead of untimed, seems smoother:
-			VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=auto --title="$WTITLE" --speed=2 --no-cache --profile=low-latency --opengl-glfinish=yes --opengl-swapinterval=0"
-
-		#less hammering, experimental, introduce some stuttering :/
-			#VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=auto --title="$WTITLE" --speed=2 --no-cache --profile=low-latency --opengl-glfinish=yes --opengl-swapinterval=0 --cache-pause=yes --cache-pause-wait=0.001"
-			
-    
-		#older mpv versions, vaapi
-			#VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=vaapi --vo=gpu --gpu-api=opengl --title="$WTITLE" --untimed --no-cache --audio-buffer=0  --vd-lavc-threads=1 --cache-pause=no --demuxer-lavf-o=fflags=+nobuffer --demuxer-lavf-analyzeduration=0.1 --video-sync=audio --interpolation=no  --opengl-glfinish=yes --opengl-swapinterval=0"
-
-    AUDIOPLAYER="ffplay - -nostats -loglevel warning -flags low_delay -nodisp -probesize 32 -fflags nobuffer+fastseek+flush_packets -analyzeduration 0 -sync ext -af aresample=async=1:min_comp=0.1:first_pts=$AUDIO_DELAY_COMPENSATION"
-
-
 # Misc
     SSH_CIPHER="" #Optionally, force an ssh cipher to be used
     #SSH_CIPHER="aes256-gcm@openssh.com"
@@ -305,7 +284,6 @@ deps_or_exit(){
 }
 
 
-
 # ### MAIN ### ### MAIN ### ### MAIN ### ### MAIN ###
 
 if [ "$1 " = "inputconfig " ] ; then
@@ -360,6 +338,9 @@ do
 		#--videoplayer)
 		#	VIDEOPLAYER="$2"
 		#	shift ; shift ;;
+		--vplayeropts)
+			VPLAYEROPTS="$2"
+			shift ; shift ;;
 		-v|--vbitrate)
 			VIDEO_BITRATE_MAX="$2"
 			shift ; shift ;;
@@ -371,7 +352,24 @@ do
 	esac
 done
 
+# Decoding
+    #ffplay, low latency, no hardware decoding
+		#VIDEOPLAYER="ffplay -  -vf "setpts=0.5*PTS" -nostats -window_title "$WTITLE" -probesize 32 -flags low_delay -framedrop  -fflags nobuffer+fastseek+flush_packets -analyzeduration 0 -sync ext"
 
+	#mpv, less latency, possibly hardware decoding, may hammer the cpu.
+		#Untimed:
+			#VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=auto --title="$WTITLE" --untimed --no-cache --profile=low-latency --opengl-glfinish=yes --opengl-swapinterval=0"
+		
+		#speed=2 instead of untimed, seems smoother:
+			VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=auto --title="$WTITLE" --speed=2 --no-cache --profile=low-latency --opengl-glfinish=yes --opengl-swapinterval=0 $VPLAYEROPTS"
+
+		#less hammering, experimental, introduce some stuttering :/
+			#VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=auto --title="$WTITLE" --speed=2 --no-cache --profile=low-latency --opengl-glfinish=yes --opengl-swapinterval=0 --cache-pause=yes --cache-pause-wait=0.001"
+			
+		#older mpv versions, vaapi
+			#VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=vaapi --vo=gpu --gpu-api=opengl --title="$WTITLE" --untimed --no-cache --audio-buffer=0  --vd-lavc-threads=1 --cache-pause=no --demuxer-lavf-o=fflags=+nobuffer --demuxer-lavf-analyzeduration=0.1 --video-sync=audio --interpolation=no  --opengl-glfinish=yes --opengl-swapinterval=0"
+
+    AUDIOPLAYER="ffplay - -nostats -loglevel warning -flags low_delay -nodisp -probesize 32 -fflags nobuffer+fastseek+flush_packets -analyzeduration 0 -sync ext -af aresample=async=1:min_comp=0.1:first_pts=$AUDIO_DELAY_COMPENSATION"
 
 #Sanity check
     me=$(basename "$0")
@@ -401,6 +399,8 @@ done
 		echo "-v, --vbitrate      video bitrate in kbps or AUTO"
 		echo "                    AUTO will use 80% of the maximum available throughput."
 		echo "-a, --abitrate      audio bitrate in kbps"
+		echo "    --vplayeropts   additional options to pass to videoplayer"
+		echo "                    eg: \"--video-output-levels=limited --video-rotate=90\""
 		#echo "    --videoplayer   
 		echo
         echo "Example 1: john connecting to jserver, all defaults accepted"
