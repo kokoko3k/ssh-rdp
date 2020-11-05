@@ -330,6 +330,9 @@ do
 		--customv)
 			VIDEO_ENC_CUSTOM="$2"
 			shift ; shift ;;
+		--zerocopy)
+			ZEROCOPY="$2"
+			shift ; shift ;;
 		--customa)
 			AUDIO_ENC_CUSTOM="$2"
 			shift ; shift ;;
@@ -391,7 +394,11 @@ done
 		echo "    --prescale      scale video before encoding (eg: 1280x720)"
 		echo "                    Has impact on remote cpu use and can increase latency too."
 		echo "-f, --fps           grabbed frames per second"
-		echo "    --videoenc      Video encoder can be: cpu,amdgpu,intelgpu,nvgpu or custom"
+		echo "    --videoenc      Video encoder can be: cpu,amdgpu,intelgpu,nvgpu,zerocopy or custom"
+		echo "                    \"zerocopy\" is experimental and causes ffmpeg to use kmsgrab"
+		echo "                    to grab the framebuffer and pass frames to vaapi encoder."
+		echo "                    --display is ignored when using zerocopy"
+		echo "                    Hardware cursors are not grabbed (probabily you won't see the mouse)"
 		echo "      --customv     Specify a string for video encoder stuff when videoenc is set to custom"
 		echo "                    eg: \"-threads 1 -c:v h264_nvenc -preset llhq -delay 0 -zerolatency 1\""
 		echo "    --audioenc      Audio encoder can be: opus,pcm or custom"
@@ -545,6 +552,8 @@ echo
 			VIDEO_ENC="$VIDEO_ENC_CUSTOM" ;;
 		intelgpu)       
 			VIDEO_ENC="$VIDEO_ENC_INTELGPU" ;;			
+		zerocopy)       
+			VIDEO_ENC="" ;;		
 		*)              
 			print_error "Unsupported video encoder"
 			exit ;;
@@ -580,26 +589,33 @@ echo
 #Grab Video
 	print_pending "Start video streaming..."
 
-    $SSH_EXEC sh -c "\
-        export DISPLAY=$RDISPLAY ;\
-        $FFMPEGEXE -nostdin -loglevel warning -y -f x11grab -framerate $FPS -video_size $RES -i "$RDISPLAY""$OFFSET" -sws_flags $SCALE_FLT -b:v "$VIDEO_BITRATE_MAX"k  -maxrate "$VIDEO_BITRATE_MAX"k \
-        "$VIDEO_ENC" -f_strict experimental -syncpoints none -f nut -\
-    " | $VIDEOPLAYER
+    #$SSH_EXEC sh -c "\
+    #    export DISPLAY=$RDISPLAY ;\
+    #    $FFMPEGEXE -nostdin -loglevel warning -y -f x11grab -framerate $FPS -video_size $RES -i "$RDISPLAY""$OFFSET" -sws_flags $SCALE_FLT -b:v #"$VIDEO_BITRATE_MAX"k  -maxrate "$VIDEO_BITRATE_MAX"k \
+    #    "$VIDEO_ENC" -f_strict experimental -syncpoints none -f nut -\
+    #" | $VIDEOPLAYER
 
+	if [ ! "$VIDEOENC" = "zerocopy" ] ; then
+		$SSH_EXEC sh -c "\
+			export DISPLAY=$RDISPLAY ;\
+			export VAAPI_DISABLE_INTERLACE=1;\
+			$FFMPEGEXE -nostdin -loglevel warning -y -f x11grab -framerate $FPS -video_size $RES -i "$RDISPLAY""$OFFSET" -sws_flags $SCALE_FLT -b:v "$VIDEO_BITRATE_MAX"k  -maxrate "$VIDEO_BITRATE_MAX"k \
+			"$VIDEO_ENC" -f_strict experimental -syncpoints none -f nut -\
+		" | $VIDEOPLAYER
+			else
+		#Zero copy test:
+		RES=$(sed "s/\x/\:/" <<< "$RES")
+		OFFSET=$(sed "s/\+//" <<< "$OFFSET")
+		OFFSET=$(sed "s/\,/:/" <<< "$OFFSET")
+		if [ ! "$PRESCALE" = "" ] ; then 
+			NEWRES=$(sed "s/\x/\:/" <<< "$PRESCALE")
+				else
+			NEWRES=$RES
+		fi
 
-#Zero copy test:
-#	RES=$(sed "s/\x/\:/" <<< "$RES")
-#	OFFSET=$(sed "s/\+//" <<< "$OFFSET")
-#	OFFSET=$(sed "s/\,/:/" <<< "$OFFSET")
-#	if [ ! "$PRESCALE" = "" ] ; then 
-#		NEWRES=$(sed "s/\x/\:/" <<< "$PRESCALE")
-#			else
-#		NEWRES=$RES
-#	fi
-
-#    $SSH_EXEC sh -c "\
-#		;
-#       $FFMPEGEXE -nostdin  -loglevel warning  -y -framerate $FPS -f kmsgrab -i -  -sws_flags $SCALE_FLT -b:v "$VIDEO_BITRATE_MAX"k -maxrate "$VIDEO_BITRATE_MAX"k \
-#        -vf hwmap=derive_device=vaapi,crop="$RES:$OFFSET",scale_vaapi="$NEWRES":format=nv12 -c:v h264_vaapi -bf 0 -f_strict experimental -syncpoints none -f nut -\
-#    " | $VIDEOPLAYER
-
+		$SSH_EXEC sh -c "\
+			;
+			$FFMPEGEXE -nostdin  -loglevel warning  -y -framerate $FPS -f kmsgrab -i -  -sws_flags $SCALE_FLT -b:v "$VIDEO_BITRATE_MAX"k -maxrate "$VIDEO_BITRATE_MAX"k \
+				-vf hwmap=derive_device=vaapi,crop="$RES:$OFFSET",scale_vaapi="$NEWRES":format=nv12 -c:v h264_vaapi -bf 0 -f_strict experimental -syncpoints none -qp 21 -f nut -\
+				" | $VIDEOPLAYER
+		fi
