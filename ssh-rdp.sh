@@ -616,6 +616,6 @@ echo
 		$SSH_EXEC sh -c "\
 			;
 			$FFMPEGEXE -nostdin  -loglevel warning  -y -framerate $FPS -f kmsgrab -i -  -sws_flags $SCALE_FLT -b:v "$VIDEO_BITRATE_MAX"k -maxrate "$VIDEO_BITRATE_MAX"k \
-				-vf hwmap=derive_device=vaapi,crop="$RES:$OFFSET",scale_vaapi="$NEWRES":format=nv12 -c:v h264_vaapi -bf 0 -f_strict experimental -syncpoints none -qp 21 -f nut -\
+				-vf hwmap=derive_device=vaapi,crop="$RES:$OFFSET",scale_vaapi="$NEWRES":format=nv12 -c:v h264_vaapi -bf 0  -b:v "$VIDEO_BITRATE_MAX"k  -maxrate "$VIDEO_BITRATE_MAX"k -f_strict experimental -syncpoints none  -f nut -\
 				" | $VIDEOPLAYER
 		fi
