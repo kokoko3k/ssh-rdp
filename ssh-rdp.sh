@@ -273,10 +273,16 @@ deps_or_exit(){
 	for d in $DEPS_R ; do
 		if ! $SSH_EXEC "which $d &>/dev/null" ; then
 			print_error "Cannot find required remote executable: $d"
-			ERROR=1
+			while true; do
+			    read -p "Do you want to continue anyway -not recommended- (y/n) ? " yn
+			    case $yn in
+			        [Yy]* ) ERROR=0; break;;
+			        [Nn]* ) ERROR=1; break;;
+			        * ) echo "Please answer y or n.";;
+			    esac
+			done
 		fi
 	done
-	
 	if [ "$ERROR" = "1" ] ; then
 		print_error "Missing packages, cannot continue."
 		exit
