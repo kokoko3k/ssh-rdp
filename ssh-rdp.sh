@@ -259,20 +259,20 @@ deps_or_exit(){
 	#Local deps
 	for d in $DEPS_L ; do
 		if ! which $d &>/dev/null ; then
-			print_error "Cannot find required local executable:" $d
+			print_error "Cannot find required local executable: $d"
 			ERROR=1
 		fi
 	done
 	for d in $DEPS_OPT_L ; do
 		if ! which $d &>/dev/null ; then
-			print_warning "Cannot find required optional executable:" $d
+			print_warning "Cannot find required optional executable: $d"
 		fi
 	done
 
 	#Remote deps
 	for d in $DEPS_R ; do
 		if ! $SSH_EXEC "which $d &>/dev/null" ; then
-			print_error "Cannot find required remote executable:" $d
+			print_error "Cannot find required remote executable: $d"
 			ERROR=1
 		fi
 	done
