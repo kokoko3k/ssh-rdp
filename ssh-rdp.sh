@@ -333,9 +333,6 @@ do
 		--customv)
 			VIDEO_ENC_CUSTOM="$2"
 			shift ; shift ;;
-		--zerocopy)
-			ZEROCOPY="$2"
-			shift ; shift ;;
 		--customa)
 			AUDIO_ENC_CUSTOM="$2"
 			shift ; shift ;;
@@ -401,7 +398,10 @@ done
         echo "    --pasource      Capture from the specified pulseaudio source. (experimental and may introduce delay)"
         echo "                    Use AUTO to guess, use ALL to capture everything."
         echo "                    Eg: alsa_output.pci-0000_00_1b.0.analog-stereo.monitor"
-		echo "    --videoenc      Video encoder can be: cpu,amdgpu,intelgpu,nvgpu or custom"
+		echo "    --videoenc      Video encoder can be: cpu,amdgpu,intelgpu,nvgpu,zerocopy or custom"
+		echo "                    \"zerocopy\" is experimental and causes ffmpeg to use kmsgrab"
+		echo "                    to grab the framebuffer and pass frames to vaapi encoder."
+		echo "                    --display is ignored when using zerocopy"
 		echo "      --customv     Specify a string for video encoder stuff when videoenc is set to custom"
 		echo "                    Eg: \"-threads 1 -c:v h264_nvenc -preset llhq -delay 0 -zerolatency 1\""
 		echo "    --audioenc      Audio encoder can be: opus,pcm or custom"
