@@ -404,7 +404,8 @@ done
 		echo "                    --display is ignored when using zerocopy"
 		echo "      --customv     Specify a string for video encoder stuff when videoenc is set to custom"
 		echo "                    Eg: \"-threads 1 -c:v h264_nvenc -preset llhq -delay 0 -zerolatency 1\""
-		echo "    --audioenc      Audio encoder can be: opus,pcm or custom"
+		echo "    --audioenc      Audio encoder can be: opus,pcm,null or custom"
+		echo "                    \"null\" disables audio grabbing completely
 		echo "      --customa     Specify a string for audio encoder stuff when videoenc is set to custom"
 		echo "                    Eg: \"-acodec libopus -vbr off -application lowdelay\""
 		echo "-v, --vbitrate      Video bitrate in kbps or AUTO"
@@ -578,6 +579,8 @@ echo
 			AUDIO_ENC="$AUDIO_ENC_PCM" ;;            	
 		custom)
 			AUDIO_ENC="$AUDIO_ENC_CUSTOM" ;;
+		null)
+			AUDIO_ENC="null" ;;
 		*)              
 			print_error "Unsupported audio encoder"
 			exit ;;
@@ -589,19 +592,21 @@ echo
 	fi
 	
 #Grab Audio
-	print_pending "Start audio streaming..."
+	if ! [ "$AUDIO_ENC" = "null" ] ; then
+		print_pending "Start audio streaming..."
 
-	for ASOURCE in $AUDIO_CAPTURE_SOURCE ; do
-		AUDIO_SOURCE_GRAB_STRING="$AUDIO_SOURCE_GRAB_STRING  -f pulse -ac 2 -i $ASOURCE "
-	done
-	#insert amix
-	AUDIO_SOURCE_GRAB_STRING="$AUDIO_SOURCE_GRAB_STRING -filter_complex amix=inputs=$(echo $AUDIO_CAPTURE_SOURCE|wc -w)"
+		for ASOURCE in $AUDIO_CAPTURE_SOURCE ; do
+			AUDIO_SOURCE_GRAB_STRING="$AUDIO_SOURCE_GRAB_STRING  -f pulse -ac 2 -i $ASOURCE "
+		done
+		#insert amix
+		AUDIO_SOURCE_GRAB_STRING="$AUDIO_SOURCE_GRAB_STRING -filter_complex amix=inputs=$(echo $AUDIO_CAPTURE_SOURCE|wc -w)"
 
-	$SSH_EXEC sh -c "\
-        export DISPLAY=$RDISPLAY ;\
-        $FFMPEGEXE -v quiet -nostdin -loglevel warning -y "$AUDIO_SOURCE_GRAB_STRING"   -b:a "$AUDIO_BITRATE"k "$AUDIO_ENC" -f nut -\
-    " | $AUDIOPLAYER &
-    PID4=$!
+		$SSH_EXEC sh -c "\
+			export DISPLAY=$RDISPLAY ;\
+			$FFMPEGEXE -v quiet -nostdin -loglevel warning -y "$AUDIO_SOURCE_GRAB_STRING"   -b:a "$AUDIO_BITRATE"k "$AUDIO_ENC" -f nut -\
+		" | $AUDIOPLAYER &
+		PID4=$!
+	fi
 
 
 #Grab Video
