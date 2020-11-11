@@ -23,7 +23,7 @@
     HKFILE="$HOME/.config/ssh-rdp.input.hk.config"    #where the keypress codes to switch fullscreen and forward reside
 
 #Encoding:
-    AUDIO_CAPTURE_SOURCE="guess" # "pulseaudio name like alsa_output.pci-0000_00_1b.0.analog-stereo.monitor" or "guess"
+    AUDIO_CAPTURE_SOURCE="AUTO" # "pulseaudio name like alsa_output.pci-0000_00_1b.0.analog-stereo.monitor" or "guess"
     FPS=60         # frames per second of the stream
     RES="auto"     # "ex: RES="1280x1024" or RES="auto". 
                    # If wrong, video grab will not work.
@@ -321,6 +321,9 @@ do
 		-f|--fps)
 			FPS="$2"
 			shift ; shift ;;
+		--pasource)
+			AUDIO_CAPTURE_SOURCE="$2"
+			shift ; shift ;;
 		--videoenc)
 			VIDEOENC="$2"
 			shift ; shift ;;
@@ -385,30 +388,30 @@ done
         echo ""
         echo "Use $me inputconfig to create or change the input config file"
         echo ""
-        echo "-s, --server        remote host to connect to"
+        echo "-s, --server        Remote host to connect to"
         echo "-u, --user          ssh username"
 		echo "-p, --port          ssh port"
-		echo "-d, --display       remote display (eg: 0.0)"
-		echo "-r, --resolution    grab size (eg: 1920x1080) or AUTO"
-		echo "-o, --offset        grab offset (eg: +1920,0)"
-		echo "    --prescale      scale video before encoding (eg: 1280x720)"
+		echo "-d, --display       Remote display (eg: 0.0)"
+		echo "-r, --resolution    Grab size (eg: 1920x1080) or AUTO"
+		echo "-o, --offset        Grab offset (eg: +1920,0)"
+		echo "    --prescale      Scale video before encoding (eg: 1280x720)."
 		echo "                    Has impact on remote cpu use and can increase latency too."
-		echo "-f, --fps           grabbed frames per second"
-		echo "    --videoenc      Video encoder can be: cpu,amdgpu,intelgpu,nvgpu,zerocopy or custom"
-		echo "                    \"zerocopy\" is experimental and causes ffmpeg to use kmsgrab"
-		echo "                    to grab the framebuffer and pass frames to vaapi encoder."
-		echo "                    --display is ignored when using zerocopy"
-		echo "                    Hardware cursors are not grabbed (probabily you won't see the mouse)"
+		echo "-f, --fps           Grabbed frames per second"
+        echo "-f, --fps           Grabbed frames per second"
+        echo "    --pasource      Capture from the specified pulseaudio source. (experimental and may introduce delay)"
+        echo "                    Use AUTO to guess, use ALL to capture everything."
+        echo "                    Eg: alsa_output.pci-0000_00_1b.0.analog-stereo.monitor"
+		echo "    --videoenc      Video encoder can be: cpu,amdgpu,intelgpu,nvgpu or custom"
 		echo "      --customv     Specify a string for video encoder stuff when videoenc is set to custom"
-		echo "                    eg: \"-threads 1 -c:v h264_nvenc -preset llhq -delay 0 -zerolatency 1\""
+		echo "                    Eg: \"-threads 1 -c:v h264_nvenc -preset llhq -delay 0 -zerolatency 1\""
 		echo "    --audioenc      Audio encoder can be: opus,pcm or custom"
 		echo "      --customa     Specify a string for audio encoder stuff when videoenc is set to custom"
-		echo "                    eg: \"-acodec libopus -vbr off -application lowdelay\""
-		echo "-v, --vbitrate      video bitrate in kbps or AUTO"
+		echo "                    Eg: \"-acodec libopus -vbr off -application lowdelay\""
+		echo "-v, --vbitrate      Video bitrate in kbps or AUTO"
 		echo "                    AUTO will use 80% of the maximum available throughput."
-		echo "-a, --abitrate      audio bitrate in kbps"
-		echo "    --vplayeropts   additional options to pass to videoplayer"
-		echo "                    eg: \"--video-output-levels=limited --video-rotate=90\""
+		echo "-a, --abitrate      Audio bitrate in kbps"
+		echo "    --vplayeropts   Additional options to pass to videoplayer"
+		echo "                    Eg: \"--video-output-levels=limited --video-rotate=90\""
 		#echo "    --videoplayer   
 		echo
         echo "Example 1: john connecting to jserver, all defaults accepted"
@@ -521,14 +524,22 @@ echo
 
 
 #Guess audio capture device?
-    if [ "$AUDIO_CAPTURE_SOURCE" = "guess" ] ; then
+    if [ "$AUDIO_CAPTURE_SOURCE" = "AUTO" ] ; then
 		print_pending "Guessing audio capture device"
-        AUDIO_CAPTURE_SOURCE=$($SSH_EXEC echo '$(pacmd list | grep "<.*monitor>" |awk -F "[<>]" "{print \$2}" | tail -n 1)')
+        AUDIO_CAPTURE_SOURCE=$($SSH_EXEC echo '$(pacmd list-sources | grep "<.*monitor>" |awk -F "[<>]" "{print \$2}" | tail -n 1)')
         # or: AUDIO_CAPTURE_SOURCE=$($SSH_EXEC echo '$(pactl list sources short|grep monitor|awk "{print \$2}" | head -n 1)
         print_warning "Guessed audio capture source: $AUDIO_CAPTURE_SOURCE"
 		echo
     fi
-
+#
+    if [ "$AUDIO_CAPTURE_SOURCE" = "ALL" ] ; then
+		print_pending "Guessing ALL audio capture devices"
+        AUDIO_CAPTURE_SOURCE=$($SSH_EXEC echo '$(pacmd list-sources | grep "name\: <.*>" |awk -F "[<>]" "{print \$2}")')
+        # or: AUDIO_CAPTURE_SOURCE=$($SSH_EXEC echo '$(pactl list sources short|grep monitor|awk "{print \$2}" | head -n 1)
+        print_warning "Guessed following audio capture sources: $AUDIO_CAPTURE_SOURCE"
+		echo
+    fi
+    
 #Auto video grab size?
     if [ "$RES" = "AUTO" ] || [ "$RES" = "" ] ; then
 		print_pending "Guessing remote resolution"
@@ -579,9 +590,16 @@ echo
 	
 #Grab Audio
 	print_pending "Start audio streaming..."
-    $SSH_EXEC sh -c "\
+
+	for ASOURCE in $AUDIO_CAPTURE_SOURCE ; do
+		AUDIO_SOURCE_GRAB_STRING="$AUDIO_SOURCE_GRAB_STRING  -f pulse -ac 2 -i $ASOURCE "
+	done
+	#insert amix
+	AUDIO_SOURCE_GRAB_STRING="$AUDIO_SOURCE_GRAB_STRING -filter_complex amix=inputs=$(echo $AUDIO_CAPTURE_SOURCE|wc -w)"
+
+	$SSH_EXEC sh -c "\
         export DISPLAY=$RDISPLAY ;\
-        $FFMPEGEXE -v quiet -nostdin -loglevel warning -y -f pulse -ac 2 -i "$AUDIO_CAPTURE_SOURCE"  -b:a "$AUDIO_BITRATE"k "$AUDIO_ENC" -f nut -\
+        $FFMPEGEXE -v quiet -nostdin -loglevel warning -y "$AUDIO_SOURCE_GRAB_STRING"   -b:a "$AUDIO_BITRATE"k "$AUDIO_ENC" -f nut -\
     " | $AUDIOPLAYER &
     PID4=$!
 
