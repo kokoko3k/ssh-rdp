@@ -363,13 +363,13 @@ done
 	#mpv, less latency, possibly hardware decoding, may hammer the cpu.
 		#Untimed:
 			#VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=auto --title="$WTITLE" --untimed --no-cache --profile=low-latency --opengl-glfinish=yes --opengl-swapinterval=0"
-		
+
 		#speed=2 instead of untimed, seems smoother:
 			VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=auto --title="$WTITLE" --speed=2 --no-cache --profile=low-latency --opengl-glfinish=yes --opengl-swapinterval=0 $VPLAYEROPTS"
 
 		#less hammering, experimental, introduce some stuttering :/
 			#VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=auto --title="$WTITLE" --speed=2 --no-cache --profile=low-latency --opengl-glfinish=yes --opengl-swapinterval=0 --cache-pause=yes --cache-pause-wait=0.001"
-			
+
 		#older mpv versions, vaapi
 			#VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=vaapi --vo=gpu --gpu-api=opengl --title="$WTITLE" --untimed --no-cache --audio-buffer=0  --vd-lavc-threads=1 --cache-pause=no --demuxer-lavf-o=fflags=+nobuffer --demuxer-lavf-analyzeduration=0.1 --video-sync=audio --interpolation=no  --opengl-glfinish=yes --opengl-swapinterval=0"
 
@@ -396,7 +396,7 @@ done
 		echo "-f, --fps           Grabbed frames per second"
         echo "-f, --fps           Grabbed frames per second"
         echo "    --pasource      Capture from the specified pulseaudio source. (experimental and may introduce delay)"
-        echo "                    Use AUTO to guess, use ALL to capture everything."
+        echo "                    Use AUTO to guess, CREATE to create a dummy output for the duration of the session and ALL to capture everything."
         echo "                    Eg: alsa_output.pci-0000_00_1b.0.analog-stereo.monitor"
 		echo "    --videoenc      Video encoder can be: cpu,amdgpu,intelgpu,nvgpu,zerocopy or custom"
 		echo "                    \"zerocopy\" is experimental and causes ffmpeg to use kmsgrab"
@@ -525,6 +525,19 @@ echo
 
 
 #Guess audio capture device?
+    if [ "$AUDIO_CAPTURE_SOURCE" = "CREATE" ] ; then
+	print_pending "Create dummy"
+	$SSH_EXEC 'pacmd load-module module-null-sink sink_name=RDPSINK;
+		pacmd update-sink-proplist RDPSINK device.description=RDPSINK;
+		pacmd load-module module-loopback sink=RDPSINK;
+		pacmd unload-module module-stream-restore;
+		pacmd load-module module-stream-restore restore_device=false'
+	$SSH_EXEC 'pactl set-default-sink $(pactl list sinks | grep RDPSINK -B3 | grep Sink\ \# | cut -f2 -d\#)'
+        AUDIO_CAPTURE_SOURCE='RDPSINK.monitor'
+        print_warning "Created audio capture source: $AUDIO_CAPTURE_SOURCE"
+	KILL_PULSE_ON_EXIT=true
+		echo
+    fi
     if [ "$AUDIO_CAPTURE_SOURCE" = "AUTO" ] ; then
 		print_pending "Guessing audio capture device"
         AUDIO_CAPTURE_SOURCE=$($SSH_EXEC echo '$(pacmd list-sources | grep "<.*monitor>" |awk -F "[<>]" "{print \$2}" | tail -n 1)')
@@ -641,4 +654,7 @@ echo
 			$FFMPEGEXE -nostdin  -loglevel warning  -y -framerate $FPS -f kmsgrab -i -  -sws_flags $SCALE_FLT -b:v "$VIDEO_BITRATE_MAX"k -maxrate "$VIDEO_BITRATE_MAX"k \
 				-vf hwmap=derive_device=vaapi,crop="$RES:$OFFSET",scale_vaapi="$NEWRES":format=nv12 -c:v h264_vaapi -bf 0  -b:v "$VIDEO_BITRATE_MAX"k  -maxrate "$VIDEO_BITRATE_MAX"k -f_strict experimental -syncpoints none  -f nut -\
 				" | $VIDEOPLAYER
+		fi
+		if [ KILL_PULSE_ON_EXIT ] ; then
+			$SSH_EXEC 'pulseaudio -k'
 		fi
