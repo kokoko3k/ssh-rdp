@@ -179,6 +179,12 @@ list_descendants() {
 finish() {
     #echo ; echo TRAP: finish.
 
+    if ! [ "REXEC_EXIT" = "" ] ; then
+		print_pending "Executing $REXEC_EXIT"
+		$SSH_EXEC "bash -s" < "$REXEC_EXIT"
+		print_ok "$REXEC_EXIT exited."
+	fi
+
     #ffplay and/or ffmpeg may hangs on remote, kill them by name
 #    $SSH_EXEC "killall $FFPLAYEXE" &>/dev/null
 #    $SSH_EXEC "killall $FFMPEGEXE" &>/dev/null
@@ -197,6 +203,7 @@ finish() {
     
     rm $NESCRIPT &>/dev/null
 	rm $NE_CMD_SOCK&>/dev/null
+	
 }
 
 #Test and report net download speed
@@ -357,6 +364,13 @@ do
 		-a|--abitrate)
 			AUDIO_BITRATE="$2"
 			shift ; shift ;;
+		--rexec-before)
+			REXEC_BEFORE="$2"
+			shift ; shift ;;
+		--rexec-exit)
+			REXEC_EXIT="$2"
+			shift ; shift ;;
+			
 		*) 
 			shift ;;
 	esac
@@ -419,6 +433,8 @@ done
 		echo "-a, --abitrate      Audio bitrate in kbps"
 		echo "    --vplayeropts   Additional options to pass to videoplayer"
 		echo "                    Eg: \"--video-output-levels=limited --video-rotate=90\""
+		echo "    --rexec-before  Execute the specified script via 'sh' just before the connection"
+		echo "    --rexec-exit    Execute the specified script via 'sh' before exiting the script"
 		#echo "    --videoplayer   
 		echo
         echo "Example 1: john connecting to jserver, all defaults accepted"
@@ -515,6 +531,13 @@ if [ "$VIDEO_BITRATE_MAX" = "AUTO" ] ; then
 fi
 
 echo
+
+if ! [ "REXEC_BEFORE" = "" ] ; then
+	print_pending "Executing $REXEC_BEFORE"
+	$SSH_EXEC "bash -s" < "$REXEC_BEFORE"
+	print_ok "$REXEC_BEFORE exited."
+fi
+
 setup_input_loop & 
 sleep 0.1 #(just to not shuffle output messages)
 PID1=$!
