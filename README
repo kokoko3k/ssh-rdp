@@ -1,27 +1,30 @@
 ssh-rdp
 
-ssh-rdp.sh is a shell script that aims to allow you to stream the desktop and the sound from a remote host
-with minimum latency and control it.
+ssh-rdp.sh is a shell script that aims to allow you to stream the desktop and the 
+sound from a remote host with minimum latency and control it.
 Every input device can be forwarded thanks to netevent.
 That means you can even forward your joypads and play remotely.
-There is no need to install any couterpart "server" on the remote host.
-Of course it needs to have some specific packages installed.
+ssh-rdp has no dedicated "server" counterpart, but ff course it needs to have 
+some specific packages installed on the remote side.
 
 Requirements:
 * Local and Remote: bash,ffmpeg,openssh,netevent
-* Local:  inotifywait, wmctrl, optional: mpv + taskset from util-linux to get even lower latency but with more cpu use.
+* Local:  inotifywait, wmctrl, 
+          Optional:mpv + taskset (lower latency but more cpu use).
 * Remote: xdpyinfo,pulseaudio
 
-To make it work, start it the first time without arguments to see usage informations.
-Next, start it with the "inputconfig" parameter and pay attention to what it asks you.
+To make it work, first start it with the "inputconfig" option 
+and pay attention to what it asks you.
+Next, start it with -h parameter alone to see al the options.
 
 There are other tunables you can find in the script.
 
 Drawbacks:
-* Due to some pulseaudio shortcomings, sometimes the audio get desyncronized, it will recover by itself by speeding up, and you can hear high-pitched sound.
-* Just clicking in the remote window does not pass the control to it, because that is the ffplay window; so hitting the hotkey is mandatory.
-* For remote gaming, turning on cpu encoder may give better results than gpu encoder, if the gpu is already at its limit.
+* Due to some pulseaudio shortcomings, sometimes the audio get desyncronized,
+  it will recover by itself by speeding up, and you'll hear high-pitched sound.
+* Just clicking in the remote window does not pass the control to it, 
+  because that is the playuer, so hitting the hotkey is mandatory.
+* For remote gaming, turning on cpu encoder may give better 
+  results than gpu encoder, if the gpu is already at its limit.
 
 I'm open to suggestions to make this software better!
-Notably, it lacks a way to use amd and intel gpu encoders.
-If anybody could write and post a VIDEO_ENC string, it would be really nice.
