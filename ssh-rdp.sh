@@ -179,7 +179,7 @@ list_descendants() {
 finish() {
     #echo ; echo TRAP: finish.
 
-    if ! [ "REXEC_EXIT" = "" ] ; then
+    if ! [ "$REXEC_EXIT" = "" ] ; then
 		print_pending "Executing $REXEC_EXIT"
 		$SSH_EXEC "bash -s" < "$REXEC_EXIT"
 		print_ok "$REXEC_EXIT exited."
