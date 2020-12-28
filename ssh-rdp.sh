@@ -277,7 +277,9 @@ deps_or_exit(){
 	done
 
 	#Remote deps
+	ERROR=0
 	for d in $DEPS_R ; do
+		ERROR=0
 		if ! $SSH_EXEC "which $d &>/dev/null" ; then
 			print_error "Cannot find required remote executable: $d"
 			while true; do
@@ -289,12 +291,11 @@ deps_or_exit(){
 			    esac
 			done
 		fi
+        if [ "$ERROR" = "1" ] ; then
+            print_error "Missing packages, cannot continue."
+	        exit
+		fi
 	done
-	if [ "$ERROR" = "1" ] ; then
-		print_error "Missing packages, cannot continue."
-		exit
-	fi
-		
 }
 
 
