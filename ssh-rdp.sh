@@ -56,7 +56,7 @@
 
 	#Prescaling quality see https://ffmpeg.org/ffmpeg-scaler.html for possible values
 	SCALE_FLT="fast_bilinear" #bilinear,bicubic,lanczos,spline...
-	
+
 	#Remote window title
     #WTITLE="$RUSER@$RHOST""$RDISPLAY"
     WTITLE="ssh-rdp""-"\["$$"\]
@@ -261,7 +261,7 @@ deps_or_exit(){
 	ERROR=0
 	DEPS_L="bash grep head cut timeout sleep tee inotifywait netevent wc wmctrl awk basename ssh ffplay mpv ["
 	DEPS_OPT_L=""
-	DEPS_R="bash timeout dd ffmpeg pacmd grep awk tail xdpyinfo"
+	DEPS_R="bash timeout dd ffmpeg pacmd grep awk tail xdpyinfo netevent"
 
 	#Local deps
 	for d in $DEPS_L ; do
