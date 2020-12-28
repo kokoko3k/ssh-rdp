@@ -370,8 +370,8 @@ do
 		--rexec-exit)
 			REXEC_EXIT="$2"
 			shift ; shift ;;
-			
-		*) 
+
+		*)
 			shift ;;
 	esac
 done
@@ -532,7 +532,7 @@ fi
 
 echo
 
-if ! [ "REXEC_BEFORE" = "" ] ; then
+if ! [ "$REXEC_BEFORE" = "" ] ; then
 	print_pending "Executing $REXEC_BEFORE"
 	$SSH_EXEC "bash -s" < "$REXEC_BEFORE"
 	print_ok "$REXEC_BEFORE exited."
