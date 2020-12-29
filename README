@@ -13,6 +13,8 @@ Requirements:
 * Local user need to access files under /dev/input,
   so make sure it is in the input group.
 * Remote user need access to special device /dev/uinput
+  You can do that by install the provided 70-uinput.rules into /etc/udev/rules.d
+  on the remote side and reboot it.
 
 * Local and Remote: bash,ffmpeg,openssh,netevent
 * Local:  inotifywait, wmctrl, 
