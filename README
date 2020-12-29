@@ -1,13 +1,19 @@
 ssh-rdp
 
 ssh-rdp.sh is a shell script that aims to allow you to stream the desktop and the 
-sound from a remote host with minimum latency and control it.
+sound from a remote host with minimum latency and input control over it.
 Every input device can be forwarded thanks to netevent.
 That means you can even forward your joypads and play remotely.
-ssh-rdp has no dedicated "server" counterpart, but ff course it needs to have 
+ssh-rdp has no dedicated "server" counterpart, but of course it needs to have 
 some specific packages installed on the remote side.
 
+
 Requirements:
+
+* Local  and remote user need to access files under /dev/input,
+  so make sure they are in the input group.
+  You may beed to reboot after changing group membership.
+
 * Local and Remote: bash,ffmpeg,openssh,netevent
 * Local:  inotifywait, wmctrl, 
           Optional:mpv + taskset (lower latency but more cpu use).
