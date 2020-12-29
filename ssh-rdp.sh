@@ -137,17 +137,20 @@ events_from_name(){
 check_local_input_group(){
     if ! id -nG $(id -u)|grep -qw input  ; then 
         echo
-        print_warning "local user is not in the input group, but /dev/input/* access is required"
-        print_warning "for local and remote user to forward input devices."
+        print_warning "local user is not in the input group,"
+        print_warning "but /dev/input/* access is required to forward input devices."
         ask_continue_or_exit
     fi
 }
 
-check_remote_input_group(){
-    if ! $SSH_EXEC " id -nG \$(id -u)|grep -qw input" ; then
+check_remote_uinput_access(){
+	$SSH_EXEC "test -w /dev/uinput" || E="noaccess"
+	$SSH_EXEC "test -r /dev/uinput" || E="noaccess"
+	
+    if [ "$E" = "noaccess" ] ; then
         echo
-        print_warning "Local user is not in the input group, but /dev/input/* access is required"
-        print_warning "for local and remote user to forward input devices."
+        print_warning "Remote user is missing, R/W access to /dev/uinput"
+        print_warning "which is needed to forward input devices."
         ask_continue_or_exit
     fi
 }
@@ -296,7 +299,7 @@ setup_input_loop() {
 deps_or_exit(){
     #Check that dependancies are ok, or exits the script
     check_local_input_group
-    check_remote_input_group
+    check_remote_uinput_access
     DEPS_L="bash grep head cut timeout sleep tee inotifywait netevent wc wmctrl awk basename ssh ffplay mpv ["
     DEPS_OPT_L=""
     DEPS_R="bash timeout dd ffmpeg pacmd grep awk tail xdpyinfo netevent"
