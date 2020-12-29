@@ -88,8 +88,8 @@ ask_continue_or_exit(){
     if [ "$ERROR" = "1" ] ; then
         print_error "Cannot continue."
         exit
-			else
-		print_warning "Proceeding anyway..."
+            else
+        print_warning "Proceeding anyway..."
     fi
 }
 
@@ -135,25 +135,25 @@ events_from_name(){
 }
 
 check_local_input_group(){
-	if ! id -nG $(id -u)|grep -qw input  ; then 
-		echo
-		print_warning "local user is not in the input group, but /dev/input/* access is required"
-		print_warning "for local and remote user to forward input devices."
-		ask_continue_or_exit
-	fi
+    if ! id -nG $(id -u)|grep -qw input  ; then 
+        echo
+        print_warning "local user is not in the input group, but /dev/input/* access is required"
+        print_warning "for local and remote user to forward input devices."
+        ask_continue_or_exit
+    fi
 }
 
 check_remote_input_group(){
-	if ! $SSH_EXEC " id -nG \$(id -u)|grep -qw input" ; then
-		echo
-		print_warning "Local user is not in the input group, but /dev/input/* access is required"
-		print_warning "for local and remote user to forward input devices."
-		ask_continue_or_exit
-	fi
+    if ! $SSH_EXEC " id -nG \$(id -u)|grep -qw input" ; then
+        echo
+        print_warning "Local user is not in the input group, but /dev/input/* access is required"
+        print_warning "for local and remote user to forward input devices."
+        ask_continue_or_exit
+    fi
 }
 
 create_input_files() {
-	check_local_input_group
+    check_local_input_group
     tmpfile=/tmp/$$devices$$.txt
     sleep 0.1
     timeout=10 #seconds to probe for input devices
@@ -398,7 +398,6 @@ do
         --rexec-exit)
             REXEC_EXIT="$2"
             shift ; shift ;;
-
         *)
             shift ;;
     esac
