@@ -10,9 +10,9 @@ some specific packages installed on the remote side.
 
 Requirements:
 
-* Local  and remote user need to access files under /dev/input,
-  so make sure they are in the input group.
-  You may beed to reboot after changing group membership.
+* Local user need to access files under /dev/input,
+  so make sure it is in the input group.
+* Remote user need access to special device /dev/uinput
 
 * Local and Remote: bash,ffmpeg,openssh,netevent
 * Local:  inotifywait, wmctrl, 
