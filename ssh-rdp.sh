@@ -76,6 +76,23 @@ print_notice()  { echo -e "\e[1m[!!] $1\e[0m" ;};
 print_ok()      { echo -e "\e[1m\e[92m[OK] $1\e[0m" ;};
 print_pending() { echo -e "\e[1m\e[94m[..] $1\e[0m" ;};
 
+ask_continue_or_exit(){
+    while true; do
+        read -p "$(print_warning "Do you want to continue anyway (not recommended) (y/n) ? ")" yn
+        case $yn in
+            [Yy]* ) ERROR=0; break;;
+            [Nn]* ) ERROR=1; break;;
+            * ) print_error "Please answer y or n.";;
+        esac
+    done
+    if [ "$ERROR" = "1" ] ; then
+        print_error "Cannot continue."
+        exit
+			else
+		print_warning "Proceeding anyway..."
+    fi
+}
+
 generate_ICFILE_from_names() {
     #Also, exits from the script if no keyboard is found
     I_IFS="$IFS"
@@ -117,7 +134,26 @@ events_from_name(){
     grep 'Name=\|Handlers' /proc/bus/input/devices|grep -A1 "$1"|cut -d "=" -f 2 |grep -o '[^ ]*event[^ ]*'
 }
 
+check_local_input_group(){
+	if ! id -nG $(id -u)|grep -qw input  ; then 
+		echo
+		print_warning "local user is not in the input group, but /dev/input/* access is required"
+		print_warning "for local and remote user to forward input devices."
+		ask_continue_or_exit
+	fi
+}
+
+check_remote_input_group(){
+	if ! $SSH_EXEC " id -nG \$(id -u)|grep -qw input" ; then
+		echo
+		print_warning "Local user is not in the input group, but /dev/input/* access is required"
+		print_warning "for local and remote user to forward input devices."
+		ask_continue_or_exit
+	fi
+}
+
 create_input_files() {
+	check_local_input_group
     tmpfile=/tmp/$$devices$$.txt
     sleep 0.1
     timeout=10 #seconds to probe for input devices
@@ -257,23 +293,10 @@ setup_input_loop() {
 }
 
 
-ask_continue_or_exit(){
-    while true; do
-        read -p "Do you want to continue anyway -not recommended- (y/n) ? " yn
-        case $yn in
-            [Yy]* ) ERROR=0; break;;
-            [Nn]* ) ERROR=1; break;;
-            * ) echo "Please answer y or n.";;
-        esac
-    done
-        if [ "$ERROR" = "1" ] ; then
-            print_error "Missing packages, cannot continue."
-            exit
-        fi
-}
-
 deps_or_exit(){
     #Check that dependancies are ok, or exits the script
+    check_local_input_group
+    check_remote_input_group
     DEPS_L="bash grep head cut timeout sleep tee inotifywait netevent wc wmctrl awk basename ssh ffplay mpv ["
     DEPS_OPT_L=""
     DEPS_R="bash timeout dd ffmpeg pacmd grep awk tail xdpyinfo netevent"
