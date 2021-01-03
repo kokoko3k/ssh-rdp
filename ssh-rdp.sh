@@ -149,7 +149,7 @@ check_remote_uinput_access(){
 	
     if [ "$E" = "noaccess" ] ; then
         echo
-        print_warning "Remote user is missing, R/W access to /dev/uinput"
+        print_warning "Remote user is missing R/W access to /dev/uinput"
         print_warning "which is needed to forward input devices."
         ask_continue_or_exit
     fi
