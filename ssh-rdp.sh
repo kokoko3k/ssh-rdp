@@ -522,6 +522,7 @@ trap finish INT TERM EXIT
         print_ok "Started ssh multiplexed connection"
             else
         print_warning "Cannot start ssh multiplexed connection"
+        ask_continue_or_exit
     fi
 #Shortcut to start remote commands:
     [ ! "$SSH_CIPHER" = "" ] && SSH_CIPHER=" -c $SSH_CIPHER"
