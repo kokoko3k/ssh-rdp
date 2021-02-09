@@ -449,16 +449,19 @@ done
         echo "                    Use AUTO to guess, use ALL to capture everything."
         echo "                    Eg: alsa_output.pci-0000_00_1b.0.analog-stereo.monitor"
         echo ""
-        echo "    --videoenc      Video encoder can be: cpu,amdgpu,intelgpu,nvgpu,zerocopy or custom"
+        echo "    --videoenc      Video encoder can be: cpu,amdgpu,intelgpu,nvgpu,zerocopy,custom or show"
         echo "                    \"zerocopy\" is experimental and causes ffmpeg to use kmsgrab"
         echo "                    to grab the framebuffer and pass frames to vaapi encoder."
         echo "                    You've to run 'setcap cap_sys_admin+ep $(which ffmpeg)' on the server to use zerocopy."
         echo "                    --display is ignored when using zerocopy."
+        echo "                    specify \"show\" to print the options for each preset."
 		echo ""
         echo "    --customv       Specify a string for video encoder stuff when videoenc is set to custom"
         echo "                    Eg: \"-threads 1 -c:v h264_nvenc -preset llhq -delay 0 -zerolatency 1\""
         echo "    --audioenc      Audio encoder can be: opus,pcm,null or custom"
         echo "                    \"null\" disables audio grabbing completely"
+        echo "                    specify \"show\" to print the options for each preset."
+        echo ""
         echo "    --customa       Specify a string for audio encoder stuff when videoenc is set to custom"
         echo "                    Eg: \"-acodec libopus -vbr off -application lowdelay\""
         echo "-v, --vbitrate      Video bitrate in kbps or AUTO"
@@ -499,16 +502,35 @@ done
     fi
     RDISPLAY=":$RDISPLAY"
 
+    if [ "$AUDIOENC" = "show" ] || [ "$VIDEOENC" = "show" ] ; then
+		if [ "$AUDIOENC" = "show" ] ; then
+			print_pending "Audio encoding presets: \
+			\n opus: \"$AUDIO_ENC_OPUS\"      \
+			\n pcm:  \"$AUDIO_ENC_PCM\"       \
+			\n"
+		fi
+		
+		if [ "$VIDEOENC" = "show" ] ; then
+			print_pending "Video encoding presets: \
+			\n cpu:      \"$VIDEO_ENC_CPU\"      \
+			\n amdgpu:   \"$VIDEO_ENC_AMDGPU\"   \
+			\n intelgpu: \"$VIDEO_ENC_INTELGPU\" \
+			\n nvgpu:    \"$VIDEO_ENC_NVGPU\"    \
+			\n"
+		fi
+		exit
+    fi
+    
     if [ "$AUDIOENC" = "custom" ] && [ "$AUDIO_ENC_CUSTOM" = "" ] ; then
         print_error "Custom audioencoder requested, but no custom encoder string provided. use --customa <something>"
         exit
     fi
-
+    
     if [ "$VIDEOENC" = "custom" ] && [ "$VIDEO_ENC_CUSTOM" = "" ] ; then
-        print_error "Custom video encoder requested, but no custom encoder string provided. use --customv <something>"
+        print_notice "Custom video encoder requested, but no custom encoder string provided. use --customv <something>"
         exit
     fi
-    
+      
     if [ ! -f "$EVDFILE" ] ; then
         print_error "Input configuration file "$EVDFILE" not found!"
         echo "Please, Select which devices to share."
