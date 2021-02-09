@@ -18,14 +18,14 @@
     RPORT="22"             # Remote ssh port to connect to
     RUSER=""               # The user on the remote side running the real X server
     RDISPLAY="0.0"         # The remote display (ex: 0.0)
-    EVDFILE="$HOME/.config/ssh-rdp.input.evd.config"  #Holds the name of the forwarded evdev device 
+    EVDFILE="$HOME/.config/ssh-rdp.input.evd.config"  #Holds the name of the forwarded evdev device
     KBDFILE="$HOME/.config/ssh-rdp.input.kbd.config"  #Holds the name of the forwarded keyboard evdev device
     HKFILE="$HOME/.config/ssh-rdp.input.hk.config"    #where the keypress codes to switch fullscreen and forward reside
 
 #Encoding:
     AUDIO_CAPTURE_SOURCE="AUTO" # "pulseaudio name like alsa_output.pci-0000_00_1b.0.analog-stereo.monitor" or "guess"
     FPS=60         # frames per second of the stream
-    RES="auto"     # "ex: RES="1280x1024" or RES="auto". 
+    RES="AUTO"     # "ex: RES="1280x1024" or RES="AUTO".
                    # If wrong, video grab will not work.
     OFFSET="+0,0"  # ex: OFFSET="" or OFFSET="+10,+40".
                    # If wrong, video grab will not work.
