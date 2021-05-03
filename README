@@ -1,38 +1,105 @@
+------------------------------------------------------------------------------
 ssh-rdp
+------------------------------------------------------------------------------
 
-ssh-rdp.sh is a shell script that aims to allow you to stream the desktop and the 
-sound from a remote host with minimum latency and input control over it.
-Every input device can be forwarded thanks to netevent.
-That means you can even forward your joypads and play remotely.
-ssh-rdp has no dedicated "server" counterpart, but of course it needs to have 
-some specific packages installed on the remote side.
+ssh-rdp.sh is a shell script that allow you control a remote desktop
+with minimum latency with support for video and audio streaming.
+
+Since the input control happens at low level by using netevent,
+every input device can actually be forwarded to the remote host.
+This means keyboards,mouses,joypads,racing wheels and so on, thus
+allowing you to actually remotely play.
+
+apart from the ssh server, ssh-rdp does not require a specific server 
+running on the remote side, but a set of tools needs to be present 
+remotely and others locally:
+
+Software requirements:
+	* Local and Remote: bash,ffmpeg,openssh,netevent
+	* Local:  inotifywait, wmctrl, mpv, taskset
+	* Remote: xdpyinfo,pulseaudio
+
+Special requirements for input forwarding:
+	* Local user need to access files under /dev/input,
+	  so make sure it is in the input group.
+	* Remote user need access to special device /dev/uinput
+	  You can do that by install the provided 70-uinput.rules 
+	  into /etc/udev/rules.d on the remote side and reboot it.
+
+Usage:
+	To make it work, first start it with the "inputconfig" option 
+	and pay attention to what it asks you.
+	Next, start it with -h parameter alone to see all the options.
+
+	There are other tunables you can find in the script.
+
+Caveats:
+	* Due to network problems, sometimes the audio could be desyncronized,
+      it will recover by itself by speeding up, and could hear high-pitched sound.
+	* Just clicking in the remote window does not pass the control to it, 
+      because that is the player, so hitting the choosed hotkey is mandatory.
+
+Suggestions:
+	* For remote gaming, turning on cpu encoder may give better 
+      results than gpu encoder, if the gpu is already at its limit.
 
 
-Requirements:
+Usage:
+------------------------------------------------------------------------------
+Use ssh-rdp.sh inputconfig to create or change the input config file
 
-* Local user need to access files under /dev/input,
-  so make sure it is in the input group.
-* Remote user need access to special device /dev/uinput
-  You can do that by install the provided 70-uinput.rules into /etc/udev/rules.d
-  on the remote side and reboot it.
+-s, --server        Remote host to connect to
+-u, --user          ssh username
+-p, --port          ssh port
+-d, --display       Remote display (eg: 0.0)
+-r, --resolution    Grab size (eg: 1920x1080) or AUTO
+-o, --offset        Grab offset (eg: +1920,0)
+    --prescale      Scale video before encoding (eg: 1280x720).
+                    Has impact on remote cpu use and can increase latency too.
+-f, --fps           Grabbed frames per second
+    --pasource      Capture from the specified pulseaudio source. (experimental and may introduce delay)
+                    Use AUTO to guess, use ALL to capture everything.
+                    Eg: alsa_output.pci-0000_00_1b.0.analog-stereo.monitor
 
-* Local and Remote: bash,ffmpeg,openssh,netevent
-* Local:  inotifywait, wmctrl, 
-          Optional:mpv + taskset (lower latency but more cpu use).
-* Remote: xdpyinfo,pulseaudio
+    --videoenc      Video encoder can be: cpu,amdgpu,intelgpu,nvgpu,zerocopy,custom or show
+                    "zerocopy" is experimental and causes ffmpeg to use kmsgrab
+                    to grab the framebuffer and pass frames to vaapi encoder.
+                    You've to run 'setcap cap_sys_admin+ep /bin/ffmpeg' on the server to use zerocopy.
+                    --display is ignored when using zerocopy.
+                    specify "show" to print the options for each preset.
 
-To make it work, first start it with the "inputconfig" option 
-and pay attention to what it asks you.
-Next, start it with -h parameter alone to see al the options.
+    --customv       Specify a string for video encoder stuff when videoenc is set to custom
+                    Eg: "-threads 1 -c:v h264_nvenc -preset llhq -delay 0 -zerolatency 1"
+    --audioenc      Audio encoder can be: opus,pcm,null,custom or show
+                    "null" disables audio grabbing completely
+                    specify "show" to print the options for each other preset.
 
-There are other tunables you can find in the script.
+    --customa       Specify a string for audio encoder stuff when videoenc is set to custom
+                    Eg: "-acodec libopus -vbr off -application lowdelay"
+-v, --vbitrate      Video bitrate in kbps or AUTO
+                    AUTO will use 80% of the maximum available throughput.
+-a, --abitrate      Audio bitrate in kbps
+    --vplayeropts   Additional options to pass to videoplayer
+                    Eg: "--video-output-levels=limited --video-rotate=90"
+    --rexec-before  Execute the specified script via 'sh' just before the connection
+    --rexec-exit    Execute the specified script via 'sh' before exiting the script
 
-Drawbacks:
-* Due to some pulseaudio shortcomings, sometimes the audio get desyncronized,
-  it will recover by itself by speeding up, and you'll hear high-pitched sound.
-* Just clicking in the remote window does not pass the control to it, 
-  because that is the playuer, so hitting the hotkey is mandatory.
-* For remote gaming, turning on cpu encoder may give better 
-  results than gpu encoder, if the gpu is already at its limit.
+      
 
+Examples:
+-------------------------------------------------------------------------------
+Peter connecting to jserver, all defaults accepted
+    ssh-rdp.sh --user venkman --server jserver
+
+Raymond connecting to jserver on ssh port 322, streaming the display 0.0
+    remote setup is dual head and john selects the right monitor.
+    Stream will be 128kbps for audio and 10000kbps for video:
+    Ex: ssh-rdp.sh -u stantz -s jserver -p 322 -d 0.0 -r 1920x1080 -o +1920,0 -f 60 -a 128 -v 10000
+
+Egon connecting to jserver on ssh port 322, streaming the display 0.0
+    Stream will be 128kbps for audio and 10000kbps for video:
+    Bill wants untouched audio, 144fps and encode via intelgpu, he needs to correct video output levels
+    Ex: ssh-rdp.sh -u spengler -s jserver -p 322 -d 0.0 -f 144 -v 80000 --audioenc pcm --videoenc intelgpu --vplayeropts "--video-output-levels=limited"
+      
+     
 I'm open to suggestions to make this software better!
