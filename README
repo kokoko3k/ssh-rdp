@@ -15,32 +15,32 @@ running on the remote side, but a set of tools needs to be present
 remotely and others locally:
 
 Software requirements:
-	* Local and Remote: bash,ffmpeg,openssh,netevent
-	* Local:  inotifywait, wmctrl, mpv, taskset
-	* Remote: xdpyinfo,pulseaudio
+    * Local and Remote: bash,ffmpeg,openssh,netevent
+    * Local:  inotifywait, wmctrl, mpv, taskset
+    * Remote: xdpyinfo,pulseaudio
 
 Special requirements for input forwarding:
-	* Local user need to access files under /dev/input,
-	  so make sure it is in the input group.
-	* Remote user need access to special device /dev/uinput
-	  You can do that by install the provided 70-uinput.rules 
-	  into /etc/udev/rules.d on the remote side and reboot it.
+    * Local user need to access files under /dev/input,
+      so make sure it is in the input group.
+    * Remote user need access to special device /dev/uinput
+      You can do that by install the provided 70-uinput.rules 
+      into /etc/udev/rules.d on the remote side and reboot it.
 
 Usage:
-	To make it work, first start it with the "inputconfig" option 
-	and pay attention to what it asks you.
-	Next, start it with -h parameter alone to see all the options.
+    To make it work, first start it with the "inputconfig" option 
+    and pay attention to what it asks you.
+    Next, start it with -h parameter alone to see all the options.
 
-	There are other tunables you can find in the script.
+    There are other tunables you can find in the script.
 
 Caveats:
-	* Due to network problems, sometimes the audio could be desyncronized,
+    * Due to network problems, sometimes the audio could be desyncronized,
       it will recover by itself by speeding up, and could hear high-pitched sound.
-	* Just clicking in the remote window does not pass the control to it, 
+    * Just clicking in the remote window does not pass the control to it, 
       because that is the player, so hitting the choosed hotkey is mandatory.
 
 Suggestions:
-	* For remote gaming, turning on cpu encoder may give better 
+    * For remote gaming, turning on cpu encoder may give better 
       results than gpu encoder, if the gpu is already at its limit.
 
 
