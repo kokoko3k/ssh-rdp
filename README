@@ -92,13 +92,13 @@ Peter connecting to jserver, all defaults accepted
     ssh-rdp.sh --user venkman --server jserver
 
 Raymond connecting to jserver on ssh port 322, streaming the display 0.0
-    remote setup is dual head and john selects the right monitor.
+    remote setup is dual head and Raymond selects the right monitor.
     Stream will be 128kbps for audio and 10000kbps for video:
     Ex: ssh-rdp.sh -u stantz -s jserver -p 322 -d 0.0 -r 1920x1080 -o +1920,0 -f 60 -a 128 -v 10000
 
 Egon connecting to jserver on ssh port 322, streaming the display 0.0
     Stream will be 128kbps for audio and 10000kbps for video:
-    Bill wants untouched audio, 144fps and encode via intelgpu, he needs to correct video output levels
+    Egon wants untouched audio, 144fps and encode via intelgpu, he needs to correct video output levels
     Ex: ssh-rdp.sh -u spengler -s jserver -p 322 -d 0.0 -f 144 -v 80000 --audioenc pcm --videoenc intelgpu --vplayeropts "--video-output-levels=limited"
       
      
