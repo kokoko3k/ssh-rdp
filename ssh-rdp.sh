@@ -50,7 +50,7 @@
 
     AUDIO_DELAY_COMPENSATION="4000" #The higher the value, the lower the audio delay.
                                     #Setting this too high will likely produce crackling sound.
-                                    #Try in range 0-6000
+                                    #Try in range 0-8000
 
     #Prescale desktop before sending?
     PRESCALE="" # eg: "" or something like "1280x720"
@@ -681,7 +681,7 @@ echo
         print_pending "Start audio streaming..."
 
         for ASOURCE in $AUDIO_CAPTURE_SOURCE ; do
-            AUDIO_SOURCE_GRAB_STRING="$AUDIO_SOURCE_GRAB_STRING  -f pulse -ac 2 -i $ASOURCE "
+            AUDIO_SOURCE_GRAB_STRING="$AUDIO_SOURCE_GRAB_STRING  -f pulse -ac 2 -fragment_size 1024 -i $ASOURCE "
         done
         #insert amix
         AUDIO_SOURCE_GRAB_STRING="$AUDIO_SOURCE_GRAB_STRING -filter_complex amix=inputs=$(echo $AUDIO_CAPTURE_SOURCE|wc -w)"
