@@ -363,6 +363,9 @@ do
         -o|--offset)
             OFFSET="$2"
             shift ; shift ;;
+        --follow)
+			FOLLOW_STRING='-follow_mouse 1'
+            shift ;;
         -f|--fps)
             FPS="$2"
             shift ; shift ;;
@@ -442,6 +445,7 @@ done
         echo "-d, --display       Remote display (eg: 0.0)"
         echo "-r, --resolution    Grab size (eg: 1920x1080) or AUTO"
         echo "-o, --offset        Grab offset (eg: +1920,0)"
+        echo "    --follow        pan the grabbed area when the cursor reaches the border"
         echo "    --prescale      Scale video before encoding (eg: 1280x720)."
         echo "                    Has impact on remote cpu use and can increase latency too."
         echo "-f, --fps           Grabbed frames per second"
@@ -453,7 +457,7 @@ done
         echo "                    \"zerocopy\" is experimental and causes ffmpeg to use kmsgrab"
         echo "                    to grab the framebuffer and pass frames to vaapi encoder."
         echo "                    You've to run 'setcap cap_sys_admin+ep $(which ffmpeg)' on the server to use zerocopy."
-        echo "                    --display is ignored when using zerocopy."
+        echo "                    --display, --follow are ignored when using zerocopy."
         echo "                    specify \"show\" to print the options for each preset."
 		echo ""
         echo "    --customv       Specify a string for video encoder stuff when videoenc is set to custom"
@@ -707,7 +711,7 @@ echo
         $SSH_EXEC sh -c "\
             export DISPLAY=$RDISPLAY ;\
             export VAAPI_DISABLE_INTERLACE=1;\
-            $FFMPEGEXE -nostdin -loglevel warning -y -f x11grab -framerate $FPS -video_size $RES -i "$RDISPLAY""$OFFSET" -sws_flags $SCALE_FLT -b:v "$VIDEO_BITRATE_MAX"k  -maxrate "$VIDEO_BITRATE_MAX"k \
+            $FFMPEGEXE -nostdin -loglevel warning -y -f x11grab "$FOLLOW_STRING" -framerate $FPS -video_size $RES -i "$RDISPLAY""$OFFSET" -sws_flags $SCALE_FLT -b:v "$VIDEO_BITRATE_MAX"k  -maxrate "$VIDEO_BITRATE_MAX"k \
             "$VIDEO_ENC" -f_strict experimental -syncpoints none -f nut -\
         " | $VIDEOPLAYER
             else
