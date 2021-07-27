@@ -617,7 +617,7 @@ echo
     if [ "$AUDIO_CAPTURE_SOURCE" = "AUTO" ] ; then
         print_pending "Guessing audio capture device"
         AUDIO_CAPTURE_SOURCE=$($SSH_EXEC echo '$(pacmd list-sources | grep "<.*monitor>" |awk -F "[<>]" "{print \$2}" | tail -n 1)')
-        # or: AUDIO_CAPTURE_SOURCE=$($SSH_EXEC echo '$(pactl list sources short|grep monitor|awk "{print \$2}" | head -n 1)
+        # or: AUDIO_CAPTURE_SOURCE=$($SSH_EXEC echo '$(pactl list sources short|grep monitor|awk "{print \$2}" | head -n 1)')
         print_warning "Guessed audio capture source: $AUDIO_CAPTURE_SOURCE"
         echo
     fi
@@ -625,7 +625,7 @@ echo
     if [ "$AUDIO_CAPTURE_SOURCE" = "ALL" ] ; then
         print_pending "Guessing ALL audio capture devices"
         AUDIO_CAPTURE_SOURCE=$($SSH_EXEC echo '$(pacmd list-sources | grep "name\: <.*>" |awk -F "[<>]" "{print \$2}")')
-        # or: AUDIO_CAPTURE_SOURCE=$($SSH_EXEC echo '$(pactl list sources short|grep monitor|awk "{print \$2}" | head -n 1)
+        # or: AUDIO_CAPTURE_SOURCE=$($SSH_EXEC echo '$(pactl list sources short|grep monitor|awk "{print \$2}" | head -n 1)')
         print_warning "Guessed following audio capture sources: $AUDIO_CAPTURE_SOURCE"
         echo
     fi
