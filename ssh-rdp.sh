@@ -430,7 +430,29 @@ done
 
     AUDIOPLAYER="ffplay - -nostats -loglevel warning -flags low_delay -nodisp -probesize 32 -fflags nobuffer+fastseek+flush_packets -analyzeduration 0 -sync ext -af aresample=async=1:min_comp=0.1:first_pts=$AUDIO_DELAY_COMPENSATION"
 
+    
+    if [ "$AUDIOENC" = "show" ] || [ "$VIDEOENC" = "show" ] ; then
+		if [ "$AUDIOENC" = "show" ] ; then
+			print_pending "Audio encoding presets: \
+			\n opus: \"$AUDIO_ENC_OPUS\"      \
+			\n pcm:  \"$AUDIO_ENC_PCM\"       \
+			\n"
+		fi
+		
+		if [ "$VIDEOENC" = "show" ] ; then
+			print_pending "Video encoding presets:       \
+			\n cpu:           \"$VIDEO_ENC_CPU\"	     \
+			\n amdgpu:        \"$VIDEO_ENC_AMDGPU\"	     \
+			\n amdgpu_hevc:   \"$VIDEO_ENC_AMDGPU_HEVC\" \
+			\n intelgpu:      \"$VIDEO_ENC_INTELGPU\"    \
+			\n nvgpu:         \"$VIDEO_ENC_NVGPU\"       \
+			\n"
+		fi
+		exit
+    fi
+    
 #Sanity check
+
     me=$(basename "$0")
     if [ -z $RUSER ] || [ -z $RHOST ] || [ "$1" = "-h" ] ; then
         echo Please edit "$me" to suid your needs and/or use the following options:
@@ -506,26 +528,6 @@ done
         exit
     fi
     RDISPLAY=":$RDISPLAY"
-
-    if [ "$AUDIOENC" = "show" ] || [ "$VIDEOENC" = "show" ] ; then
-		if [ "$AUDIOENC" = "show" ] ; then
-			print_pending "Audio encoding presets: \
-			\n opus: \"$AUDIO_ENC_OPUS\"      \
-			\n pcm:  \"$AUDIO_ENC_PCM\"       \
-			\n"
-		fi
-		
-		if [ "$VIDEOENC" = "show" ] ; then
-			print_pending "Video encoding presets:       \
-			\n cpu:           \"$VIDEO_ENC_CPU\"	     \
-			\n amdgpu:        \"$VIDEO_ENC_AMDGPU\"	     \
-			\n amdgpu_hevc:   \"$VIDEO_ENC_AMDGPU_HEVC\" \
-			\n intelgpu: 	  \"$VIDEO_ENC_INTELGPU\"    \
-			\n nvgpu:    	  \"$VIDEO_ENC_NVGPU\"       \
-			\n"
-		fi
-		exit
-    fi
     
     if [ "$AUDIOENC" = "custom" ] && [ "$AUDIO_ENC_CUSTOM" = "" ] ; then
         print_error "Custom audioencoder requested, but no custom encoder string provided. use --customa <something>"
@@ -636,7 +638,7 @@ echo
     if [ "$RES" = "AUTO" ] || [ "$RES" = "" ] ; then
         print_pending "Guessing remote resolution"
         RES=$($SSH_EXEC "export DISPLAY=$RDISPLAY ; xdpyinfo | awk '/dimensions:/ { print \$2; exit }'")
-        print_warning "Auto grab resolution: $RES"
+#         print_warning "Auto grab resolution: $RES"
         echo
     fi
 
