@@ -628,8 +628,8 @@ echo
 #
     if [ "$AUDIO_CAPTURE_SOURCE" = "ALL" ] ; then
         print_pending "Guessing ALL audio capture devices"
-        AUDIO_CAPTURE_SOURCE=$($SSH_EXEC echo '$(pacmd list-sources | grep "name\: <.*>" |awk -F "[<>]" "{print \$2}")')
-        # or: AUDIO_CAPTURE_SOURCE=$($SSH_EXEC echo '$(pactl list sources short|grep monitor|awk "{print \$2}" | head -n 1)')
+        AUDIO_CAPTURE_SOURCE=$($SSH_EXEC echo '$(pactl list sources short|awk "{print \$2}")')
+        # or: AUDIO_CAPTURE_SOURCE=$($SSH_EXEC echo '$(pacmd list-sources | grep "name\: <.*>" |awk -F "[<>]" "{print \$2}")')
         print_warning "Guessed following audio capture sources: $AUDIO_CAPTURE_SOURCE"
         echo
     fi
