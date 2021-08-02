@@ -35,6 +35,7 @@
 	VIDEO_ENC_CPU="-threads 1 -vcodec libx264 -thread_type slice -slices 1 -level 32 -preset ultrafast -tune zerolatency -intra-refresh 1 -x264opts keyint=$FPS:sliced_threads=1 -pix_fmt nv12 -vf 'null,null'"
     VIDEO_ENC_NVGPU="-threads 1 -c:v h264_nvenc -preset llhq -delay 0 -zerolatency 1 -vf 'null,null'"
     VIDEO_ENC_AMDGPU="-threads 1 -vaapi_device /dev/dri/renderD128 -c:v h264_vaapi -bf 0 -vf 'null,null,hwupload,scale_vaapi=format=nv12'"
+    VIDEO_ENC_AMDGPU_HEVC="-threads 1 -vaapi_device /dev/dri/renderD128 -c:v hevc_vaapi -bf 0 -vf 'null,null,hwupload,scale_vaapi=format=nv12'"
     VIDEO_ENC_INTELGPU="-threads 1 -vaapi_device /dev/dri/renderD128 -c:v h264_vaapi -bf 0 -vf 'null,null,hwupload,scale_vaapi=format=nv12'"
     #VIDEO_ENC_INTELGPU="-threads 1 -vaapi_device /dev/dri/renderD128 -c:v h264_vaapi -bf 0 -vf 'null,null,format=nv12,hwupload'"
 
@@ -453,7 +454,7 @@ done
         echo "                    Use AUTO to guess, use ALL to capture everything."
         echo "                    Eg: alsa_output.pci-0000_00_1b.0.analog-stereo.monitor"
         echo ""
-        echo "    --videoenc      Video encoder can be: cpu,amdgpu,intelgpu,nvgpu,zerocopy,custom or show"
+        echo "    --videoenc      Video encoder can be: cpu,amdgpu,amdgpu_hevc,intelgpu,nvgpu,zerocopy,custom or show"
         echo "                    \"zerocopy\" is experimental and causes ffmpeg to use kmsgrab"
         echo "                    to grab the framebuffer and pass frames to vaapi encoder."
         echo "                    You've to run 'setcap cap_sys_admin+ep $(which ffmpeg)' on the server to use zerocopy."
@@ -515,11 +516,12 @@ done
 		fi
 		
 		if [ "$VIDEOENC" = "show" ] ; then
-			print_pending "Video encoding presets: \
-			\n cpu:      \"$VIDEO_ENC_CPU\"      \
-			\n amdgpu:   \"$VIDEO_ENC_AMDGPU\"   \
-			\n intelgpu: \"$VIDEO_ENC_INTELGPU\" \
-			\n nvgpu:    \"$VIDEO_ENC_NVGPU\"    \
+			print_pending "Video encoding presets:       \
+			\n cpu:           \"$VIDEO_ENC_CPU\"	     \
+			\n amdgpu:        \"$VIDEO_ENC_AMDGPU\"	     \
+			\n amdgpu_hevc:   \"$VIDEO_ENC_AMDGPU_HEVC\" \
+			\n intelgpu: 	  \"$VIDEO_ENC_INTELGPU\"    \
+			\n nvgpu:    	  \"$VIDEO_ENC_NVGPU\"       \
 			\n"
 		fi
 		exit
@@ -649,6 +651,8 @@ echo
             VIDEO_ENC="$VIDEO_ENC_NVGPU" ;;            
         amdgpu)       
             VIDEO_ENC="$VIDEO_ENC_AMDGPU" ;;
+	amdgpu_hevc)
+	    VIDEO_ENC="$VIDEO_ENC_AMDGPU_HEVC" ;;
         custom)
             VIDEO_ENC="$VIDEO_ENC_CUSTOM" ;;
         intelgpu)       
