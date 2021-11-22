@@ -304,7 +304,7 @@ deps_or_exit(){
     check_remote_uinput_access
     DEPS_L="bash grep head cut timeout sleep tee inotifywait netevent wc wmctrl awk basename ssh ffplay mpv ["
     DEPS_OPT_L=""
-    DEPS_R="bash timeout dd ffmpeg pacmd grep awk tail xdpyinfo netevent"
+    DEPS_R="bash timeout dd ffmpeg pactl grep awk tail xdpyinfo netevent"
 
     #Local deps
     for d in $DEPS_L ; do
