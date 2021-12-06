@@ -262,16 +262,28 @@ setup_input_loop() {
     i=1
     touch $NESCRIPT
     KBDNAME=$(<$KBDFILE)
+    
+    # From 2.2.1, netevent splitted grab in grab-devices and write-events
+    # it also introduced the -V switch; check if it reports anything with -V
+    # to react to the change.
+    netevent_version=$(netevent 2>/dev/null -V) 
+    if ! [ "_$netevent_version" == "_" ] ; then netevent_is="NEW" ; fi
+
     for DEVICE in $(<$ICFILE_RUNTIME) ; do
         echo "     forward input from device $DEVICE..."
         DEVNAME=$(name_from_event "$DEVICE")
-        if  [ "$DEVNAME" = "$KBDNAME" ] ; then 
+        if  [ "$DEVNAME" = "$KBDNAME" ] ; then # Device is keyboard -> add it and setup hotkeys
             echo "device add mykbd$i /dev/input/$DEVICE"  >>$NESCRIPT
-            echo "hotkey add mykbd$i key:$GRAB_HOTKEY:1 grab toggle" >>$NESCRIPT
+            if [ $netevent_is == "NEW" ] ; then 
+                echo "hotkey add mykbd$i key:$GRAB_HOTKEY:1 'write-events toggle ; grab-devices toggle'" >>$NESCRIPT
+                  else
+                echo "hotkey add mykbd$i key:$GRAB_HOTKEY:1 grab toggle" >>$NESCRIPT
+            fi
+			echo "action set grab-changed exec '/usr/bin/echo Is input forwarded 1=Yes,0=No ? \$NETEVENT_GRABBING' " >>$NESCRIPT
             echo "hotkey add mykbd$i key:$GRAB_HOTKEY:0 nop" >>$NESCRIPT
             echo "hotkey add mykbd$i key:$FULLSCREENSWITCH_HOTKEY:1 exec \"/usr/bin/echo FULLSCREENSWITCH_HOTKEY\"" >>$NESCRIPT
             echo "hotkey add mykbd$i key:$FULLSCREENSWITCH_HOTKEY:0 nop" >>$NESCRIPT
-                else
+                else # Device is not keyboard -> just add it
             echo "device add dev$i /dev/input/$DEVICE"  >>$NESCRIPT
         fi
         let i=i+1
