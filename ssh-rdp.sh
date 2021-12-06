@@ -32,7 +32,7 @@
 
     #The "null,null" video filters will be changed to -vf scale by sed later on if prescale is requested
     #VIDEO_ENC_CPU="-threads 1 -vcodec libx264 -thread_type slice -slices 1 -level 32 -preset ultrafast -tune zerolatency -intra-refresh 1 -x264opts vbv-bufsize=1:slice-max-size=1500:keyint=$FPS:sliced_threads=1 -pix_fmt nv12 -vf 'null,null'"
-	VIDEO_ENC_CPU="-threads 1 -vcodec libx264 -thread_type slice -slices 1 -level 32 -preset ultrafast -tune zerolatency -intra-refresh 1 -x264opts keyint=$FPS:sliced_threads=1 -pix_fmt nv12 -vf 'null,null'"
+    VIDEO_ENC_CPU="-threads 1 -vcodec libx264 -thread_type slice -slices 1 -level 32 -preset ultrafast -tune zerolatency -intra-refresh 1 -x264opts keyint=$FPS:sliced_threads=1 -pix_fmt nv12 -vf 'null,null'"
     VIDEO_ENC_NVGPU="-threads 1 -c:v h264_nvenc -preset llhq -delay 0 -zerolatency 1 -vf 'null,null'"
     VIDEO_ENC_AMDGPU="-threads 1 -vaapi_device /dev/dri/renderD128 -c:v h264_vaapi -bf 0 -vf 'null,null,hwupload,scale_vaapi=format=nv12'"
     VIDEO_ENC_AMDGPU_HEVC="-threads 1 -vaapi_device /dev/dri/renderD128 -c:v hevc_vaapi -bf 0 -vf 'null,null,hwupload,scale_vaapi=format=nv12'"
@@ -146,9 +146,9 @@ check_local_input_group(){
 }
 
 check_remote_uinput_access(){
-	$SSH_EXEC "test -w /dev/uinput" || E="noaccess"
-	$SSH_EXEC "test -r /dev/uinput" || E="noaccess"
-	
+    $SSH_EXEC "test -w /dev/uinput" || E="noaccess"
+    $SSH_EXEC "test -r /dev/uinput" || E="noaccess"
+    
     if [ "$E" = "noaccess" ] ; then
         echo
         print_warning "Remote user is missing R/W access to /dev/uinput"
@@ -279,7 +279,7 @@ setup_input_loop() {
                   else
                 echo "hotkey add mykbd$i key:$GRAB_HOTKEY:1 grab toggle" >>$NESCRIPT
             fi
-			echo "action set grab-changed exec '/usr/bin/echo Is input forwarded 1=Yes,0=No ? \$NETEVENT_GRABBING' " >>$NESCRIPT
+            echo "action set grab-changed exec '/usr/bin/echo Is input forwarded 1=Yes,0=No ? \$NETEVENT_GRABBING' " >>$NESCRIPT
             echo "hotkey add mykbd$i key:$GRAB_HOTKEY:0 nop" >>$NESCRIPT
             echo "hotkey add mykbd$i key:$FULLSCREENSWITCH_HOTKEY:1 exec \"/usr/bin/echo FULLSCREENSWITCH_HOTKEY\"" >>$NESCRIPT
             echo "hotkey add mykbd$i key:$FULLSCREENSWITCH_HOTKEY:0 nop" >>$NESCRIPT
@@ -377,7 +377,7 @@ do
             OFFSET="$2"
             shift ; shift ;;
         --follow)
-			FOLLOW_STRING='-follow_mouse 1'
+            FOLLOW_STRING='-follow_mouse 1'
             shift ;;
         -f|--fps)
             FPS="$2"
@@ -444,23 +444,23 @@ done
 
     
     if [ "$AUDIOENC" = "show" ] || [ "$VIDEOENC" = "show" ] ; then
-		if [ "$AUDIOENC" = "show" ] ; then
-			print_pending "Audio encoding presets: \
-			\n opus: \"$AUDIO_ENC_OPUS\"      \
-			\n pcm:  \"$AUDIO_ENC_PCM\"       \
-			\n"
-		fi
-		
-		if [ "$VIDEOENC" = "show" ] ; then
-			print_pending "Video encoding presets:       \
-			\n cpu:           \"$VIDEO_ENC_CPU\"	     \
-			\n amdgpu:        \"$VIDEO_ENC_AMDGPU\"	     \
-			\n amdgpu_hevc:   \"$VIDEO_ENC_AMDGPU_HEVC\" \
-			\n intelgpu:      \"$VIDEO_ENC_INTELGPU\"    \
-			\n nvgpu:         \"$VIDEO_ENC_NVGPU\"       \
-			\n"
-		fi
-		exit
+        if [ "$AUDIOENC" = "show" ] ; then
+            print_pending "Audio encoding presets: \
+            \n opus: \"$AUDIO_ENC_OPUS\"      \
+            \n pcm:  \"$AUDIO_ENC_PCM\"       \
+            \n"
+        fi
+
+        if [ "$VIDEOENC" = "show" ] ; then
+            print_pending "Video encoding presets:       \
+            \n cpu:           \"$VIDEO_ENC_CPU\"         \
+            \n amdgpu:        \"$VIDEO_ENC_AMDGPU\"         \
+            \n amdgpu_hevc:   \"$VIDEO_ENC_AMDGPU_HEVC\" \
+            \n intelgpu:      \"$VIDEO_ENC_INTELGPU\"    \
+            \n nvgpu:         \"$VIDEO_ENC_NVGPU\"       \
+            \n"
+        fi
+        exit
     fi
     
 #Sanity check
@@ -494,7 +494,7 @@ done
         echo "                    You've to run 'setcap cap_sys_admin+ep $(which ffmpeg)' on the server to use zerocopy."
         echo "                    --display, --follow are ignored when using zerocopy."
         echo "                    specify \"show\" to print the options for each preset."
-		echo ""
+        echo ""
         echo "    --customv       Specify a string for video encoder stuff when videoenc is set to custom"
         echo "                    Eg: \"-threads 1 -c:v h264_nvenc -preset llhq -delay 0 -zerolatency 1\""
         echo "    --audioenc      Audio encoder can be: opus,pcm,null,custom or show"
@@ -665,8 +665,8 @@ echo
             VIDEO_ENC="$VIDEO_ENC_NVGPU" ;;            
         amdgpu)       
             VIDEO_ENC="$VIDEO_ENC_AMDGPU" ;;
-	amdgpu_hevc)
-	    VIDEO_ENC="$VIDEO_ENC_AMDGPU_HEVC" ;;
+    amdgpu_hevc)
+        VIDEO_ENC="$VIDEO_ENC_AMDGPU_HEVC" ;;
         custom)
             VIDEO_ENC="$VIDEO_ENC_CUSTOM" ;;
         intelgpu)       
@@ -744,7 +744,7 @@ echo
         fi
 
         $SSH_EXEC sh -c ";\
-				$FFMPEGEXE -nostdin  -loglevel warning  -y -framerate $FPS -f kmsgrab -i -  -sws_flags $SCALE_FLT -b:v "$VIDEO_BITRATE_MAX"k -maxrate "$VIDEO_BITRATE_MAX"k \
+                $FFMPEGEXE -nostdin  -loglevel warning  -y -framerate $FPS -f kmsgrab -i -  -sws_flags $SCALE_FLT -b:v "$VIDEO_BITRATE_MAX"k -maxrate "$VIDEO_BITRATE_MAX"k \
                 -vf hwmap=derive_device=vaapi,crop="$RES:$OFFSET",scale_vaapi="$NEWRES":format=nv12 -c:v h264_vaapi -bf 0  -b:v "$VIDEO_BITRATE_MAX"k  -maxrate "$VIDEO_BITRATE_MAX"k -f_strict experimental -syncpoints none  -f nut -\
                 " | $VIDEOPLAYER
         fi
