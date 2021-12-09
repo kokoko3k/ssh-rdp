@@ -17,7 +17,7 @@ remotely and others locally.
 
 Software requirements:
     * Local and Remote: bash,ffmpeg,openssh,netevent
-    * Local:  inotifywait, wmctrl, mpv, taskset
+    * Local: wmctrl, mpv, taskset
     * Remote: xdpyinfo,pulseaudio
 
 Special requirements for input forwarding:

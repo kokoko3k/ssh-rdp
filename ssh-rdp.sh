@@ -9,7 +9,7 @@
 
 #Requirements:
     #Local+Remote: ffmpeg,openssh,netevent-git
-    #Local: inotify-tools, wmctrl, optional: mpv + taskset from util-linux to get even lower latency but with more cpu use.
+    #Local: wmctrl, optional: mpv + taskset from util-linux to get even lower latency but with more cpu use.
     #Remote: xdpyinfo,pulseaudio
     #read/write access to input devices on local and remote system (input group) (sudo gpasswd --add username input)
 
@@ -123,6 +123,38 @@ generate_ICFILE_from_names() {
     print_ok "FULLSCREENSWITCH_HOTKEY=$FULLSCREENSWITCH_HOTKEY"
 }
 
+function get_input_event_device(){
+    #Show the first event device that "emits some input"
+    cd /dev/input/
+    tmpfile=/tmp/$$devices$$.txt
+    rm $tmpfile &>/dev/null
+    touch $tmpfile
+    timeout=120
+    
+    #Listen for events
+    pids=("")
+    sleep 0.1
+    for d in event* ; do
+        timeout $timeout sh -c "grep . $d -m 1 -c -H |cut -d ":" -f 1 > $tmpfile" &
+        lastpid=$!
+        pids+=("$!")
+    done 
+    
+    #Wait for one event to come
+    while ! [ -s $tmpfile ] ; do
+        sleep 0.1
+    done
+    
+    #Show the event device
+    cat $tmpfile 
+    
+    #Cleanup
+    for pid in ${pids[@]} ; do 
+        kill $pid &>/dev/null
+    done
+    rm $tmpfile
+}
+
 name_from_event(){
     #es: name_from_event event3 
     #Logitech G203 Prodigy Gaming Mouse
@@ -161,43 +193,58 @@ create_input_files() {
     check_local_input_group
     tmpfile=/tmp/$$devices$$.txt
     sleep 0.1
-    timeout=10 #seconds to probe for input devices
-    cd /dev/input/
-
-    #Ask user to generate input to auto select input devices to forward
-    echo Please, generate input on devices you want to forward, keyboard is mandatory!
-    rm $tmpfile &>/dev/null
-    for d in event* ; do 
-        sh -c "timeout 10 grep . $d -m 1 -c -H |cut -d ":" -f 1 |tee -a $tmpfile &" 
-    done 
-    echo Waiting 10 seconds for user input...
-    sleep $timeout
-    list=""
-    #Make a list of device names
+    timeout=2 #seconds to probe for input devices
     rm $EVDFILE &>/dev/null
-    for evdevice in $(<$tmpfile) ; do 
-        name=$(name_from_event $evdevice|tr " " ".")
-        list="$list $name $evdevice off "
-        echo $(name_from_event $evdevice)  >> $EVDFILE
-    done
-    #ask user to select the keyboard device
+    
+    #Ask user to generate input to auto select input devices to forward
     echo
-    echo "Press a key on the keyboard which will be forwarded."
-    KBDDEV=$(inotifywait event* -q | cut -d " " -f 1)
-    echo "Got $(name_from_event $KBDDEV)"
+    print_pending "Please, press a key on the keyboard you want to forward."
+    KBDDEV=$(get_input_event_device)
+    KBDNAME=$(name_from_event $KBDDEV)
+    echo -ne "\r"
+    print_ok "Got keyboard: $KBDNAME on $KBDDEV.\n"
     name_from_event $KBDDEV > $KBDFILE
-
+    echo $KBDNAME > $EVDFILE
+    
+    ANOTHER_DEVICE=1
+    while [ $ANOTHER_DEVICE == 1 ]; do
+        while true; do
+            read -t 0.5 -N 255  #empty input buffer
+            read -p "$(print_warning "Do you want to forward other devices? (y/n) ? ")" yn
+            case $yn in
+                [Yy]* ) 
+                        print_pending "Please, generate input with the device you want to forward."
+                        EVDEV=$(get_input_event_device)
+                        EVDEV_NAME=$(name_from_event $EVDEV)
+                        if grep "$EVDEV_NAME" $EVDFILE >/dev/null ; then
+                            print_error "Not adding $EVDEV_NAME because it is already in the forward list."
+                                else
+                            print_ok "Got $EVDEV_NAME on $EVDEV"
+                            echo -ne "\r"
+                            echo $EVDEV_NAME >> $EVDFILE
+                        fi
+                        echo
+                        ;;
+                [Nn]* ) 
+                        ANOTHER_DEVICE=0; break;;
+                * ) 
+                        print_error "Please answer y or n.";;
+            esac
+        done
+    done
+    
+    
     # create_hk_file
     # uses netevent to generate a file containing the key codes
     # to switch fullscreen and forward devices
         cd /dev/input
         rm $HKFILE &>/dev/null
-        sleep 1
-        echo ; echo Press the key to forward/unforward input devices
-        GRAB_HOTKEY=$(netevent show $KBDDEV 3 -g | grep KEY |cut -d ":" -f 2) ; echo got:$GRAB_HOTKEY
+        sleep 0.1
+        echo ; print_pending "Press the key to that will be used to forward/unforward input devices"
+        GRAB_HOTKEY=$(netevent show $KBDDEV 3 -g | grep KEY |cut -d ":" -f 2) ; print_ok "got:$GRAB_HOTKEY"
         sleep 0.5
-        echo ; echo Press the key to switch fullscreen state
-        FULLSCREENSWITCH_HOTKEY=$(netevent show $KBDDEV 3 -g | grep KEY |cut -d ":" -f 2) ; echo got:$FULLSCREENSWITCH_HOTKEY
+        echo ; print_pending "Now press the key that will be used to switch fullscreen state"
+        FULLSCREENSWITCH_HOTKEY=$(netevent show $KBDDEV 3 -g | grep KEY |cut -d ":" -f 2) ; print_ok "got:$FULLSCREENSWITCH_HOTKEY"
         echo $GRAB_HOTKEY $FULLSCREENSWITCH_HOTKEY > $HKFILE
 
         read GRAB_HOTKEY FULLSCREENSWITCH_HOTKEY <<< $(<$HKFILE)
@@ -205,7 +252,6 @@ create_input_files() {
         echo GRAB_HOTKEY=$GRAB_HOTKEY
         echo FULLSCREENSWITCH_HOTKEY=$FULLSCREENSWITCH_HOTKEY
 
-    rm $tmpfile
 }
 
 list_descendants() {
@@ -314,7 +360,7 @@ deps_or_exit(){
     #Check that dependancies are ok, or exits the script
     check_local_input_group
     check_remote_uinput_access
-    DEPS_L="bash grep head cut timeout sleep tee inotifywait netevent wc wmctrl awk basename ssh ffplay mpv ["
+    DEPS_L="bash grep head cut timeout sleep tee netevent wc wmctrl awk basename ssh ffplay mpv ["
     DEPS_OPT_L=""
     DEPS_R="bash timeout dd ffmpeg pactl grep awk tail xdpyinfo netevent"
 
