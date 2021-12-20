@@ -136,7 +136,6 @@ function get_input_event_device(){
     sleep 0.1
     for d in event* ; do
         timeout $timeout sh -c "grep . $d -m 1 -c -H |cut -d ":" -f 1 > $tmpfile" &
-        lastpid=$!
         pids+=("$!")
     done 
     
