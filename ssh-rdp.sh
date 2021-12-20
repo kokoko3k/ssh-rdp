@@ -192,7 +192,6 @@ create_input_files() {
     check_local_input_group
     tmpfile=/tmp/$$devices$$.txt
     sleep 0.1
-    timeout=2 #seconds to probe for input devices
     rm $EVDFILE &>/dev/null
     
     #Ask user to generate input to auto select input devices to forward
