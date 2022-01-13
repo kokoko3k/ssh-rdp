@@ -367,7 +367,7 @@ deps_or_exit(){
     #Check that dependancies are ok, or exits the script
     check_local_input_group
     check_remote_uinput_access
-    DEPS_L="bash grep head cut timeout sleep tee netevent wc wmctrl awk basename ssh mpv ["
+    DEPS_L="bash grep head cut timeout sleep tee netevent wc wmctrl awk basename ssh ffplay mpv ["
     DEPS_OPT_L=""
     DEPS_R="bash timeout dd ffmpeg pactl grep awk tail xdpyinfo netevent"
 
