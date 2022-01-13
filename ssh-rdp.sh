@@ -177,15 +177,24 @@ check_local_input_group(){
 }
 
 check_remote_uinput_access(){
-    $SSH_EXEC "test -w /dev/uinput" || E="noaccess"
-    $SSH_EXEC "test -r /dev/uinput" || E="noaccess"
-    
-    if [ "$E" = "noaccess" ] ; then
+	UINPUT=/dev/uinput # /dev/uinput
+	$SSH_EXEC "test -e $UINPUT" || E="noexist"
+	if [ "$E" = "noexist" ] ; then
         echo
-        print_warning "Remote user is missing R/W access to /dev/uinput"
+        print_warning "Remote system has no $UINPUT"
         print_warning "which is needed to forward input devices."
-        ask_continue_or_exit
-    fi
+        print_warning "Please, configure it to load the uinput module or build uinput into the kernel."
+        ask_continue_or_exit     
+			else #/dev/uinput was found
+		$SSH_EXEC "test -w $UINPUT" || E="noaccess"
+		$SSH_EXEC "test -r $UINPUT" || E="noaccess"
+		if [ "$E" = "noaccess" ] ; then
+			echo
+			print_warning "Remote user is missing R/W access to $UINPUT"
+			print_warning "which is needed to forward input devices."
+			ask_continue_or_exit
+		fi
+	fi
 }
 
 create_input_files() {
@@ -358,7 +367,7 @@ deps_or_exit(){
     #Check that dependancies are ok, or exits the script
     check_local_input_group
     check_remote_uinput_access
-    DEPS_L="bash grep head cut timeout sleep tee netevent wc wmctrl awk basename ssh ffplay mpv ["
+    DEPS_L="bash grep head cut timeout sleep tee netevent wc wmctrl awk basename ssh mpv ["
     DEPS_OPT_L=""
     DEPS_R="bash timeout dd ffmpeg pactl grep awk tail xdpyinfo netevent"
 
