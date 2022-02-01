@@ -39,7 +39,7 @@
     VIDEO_ENC_INTELGPU="-threads 1 -vaapi_device /dev/dri/renderD128 -c:v h264_vaapi -bf 0 -vf 'null,null,hwupload,scale_vaapi=format=nv12'"
     #VIDEO_ENC_INTELGPU="-threads 1 -vaapi_device /dev/dri/renderD128 -c:v h264_vaapi -bf 0 -vf 'null,null,format=nv12,hwupload'"
 
-    AUDIO_ENC_OPUS="-acodec libopus -vbr off -application lowdelay"    #opus, low delay great quality
+    AUDIO_ENC_OPUS="-acodec libopus -vbr off -application lowdelay --frame_duration 10"    #opus, low delay great quality
     AUDIO_ENC_PCM="-acodec pcm_s16le "    #pcm, low delay, best quality
 
     VIDEOENC="cpu"
