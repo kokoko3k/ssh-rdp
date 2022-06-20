@@ -33,6 +33,7 @@
     #The "null,null" video filters will be changed to -vf scale by sed later on if prescale is requested
     #VIDEO_ENC_CPU="-threads 1 -vcodec libx264 -thread_type slice -slices 1 -level 32 -preset ultrafast -tune zerolatency -intra-refresh 1 -x264opts vbv-bufsize=1:slice-max-size=1500:keyint=$FPS:sliced_threads=1 -pix_fmt nv12 -vf 'null,null'"
     VIDEO_ENC_CPU="-threads 1 -vcodec libx264 -thread_type slice -slices 1 -level 32 -preset ultrafast -tune zerolatency -intra-refresh 1 -x264opts keyint=$FPS:sliced_threads=1 -pix_fmt nv12 -vf 'null,null'"
+    VIDEO_ENC_CPU_RGB="-threads 1 -vcodec libx264rgb -profile:v high444 -thread_type slice -slices 1 -level 32 -preset ultrafast -tune zerolatency -intra-refresh 1 -x264opts keyint=$FPS:sliced_threads=1 -pix_fmt bgr24 -vf 'null,null'"
     VIDEO_ENC_NVGPU="-threads 1 -c:v h264_nvenc -preset llhq -delay 0 -zerolatency 1 -vf 'null,null'"
     VIDEO_ENC_AMDGPU="-threads 1 -vaapi_device /dev/dri/renderD128 -c:v h264_vaapi -bf 0 -vf 'null,null,hwupload,scale_vaapi=format=nv12'"
     VIDEO_ENC_AMDGPU_HEVC="-threads 1 -vaapi_device /dev/dri/renderD128 -c:v hevc_vaapi -bf 0 -vf 'null,null,hwupload,scale_vaapi=format=nv12'"
@@ -130,32 +131,32 @@ function get_input_event_device(){
     rm $tmpfile &>/dev/null
     touch $tmpfile
     timeout=120
-    
+
     #Listen for events
     pids=("")
     sleep 0.1
     for d in event* ; do
         timeout $timeout sh -c "grep . $d -m 1 -c -H |cut -d ":" -f 1 > $tmpfile" &
         pids+=("$!")
-    done 
-    
+    done
+
     #Wait for one event to come
     while ! [ -s $tmpfile ] ; do
         sleep 0.1
     done
-    
+
     #Show the event device
     cat $tmpfile 
-    
+
     #Cleanup
-    for pid in ${pids[@]} ; do 
+    for pid in ${pids[@]} ; do
         kill $pid &>/dev/null
     done
     rm $tmpfile
 }
 
 name_from_event(){
-    #es: name_from_event event3 
+    #es: name_from_event event3
     #Logitech G203 Prodigy Gaming Mouse
     grep 'Name=\|Handlers' /proc/bus/input/devices|grep -B1 "$1"|head -n 1|cut -d \" -f 2
 }
@@ -168,7 +169,7 @@ events_from_name(){
 }
 
 check_local_input_group(){
-    if ! id -nG $(id -u)|grep -qw input  ; then 
+    if ! id -nG $(id -u)|grep -qw input  ; then
         echo
         print_warning "local user is not in the input group,"
         print_warning "but /dev/input/* access is required to forward input devices."
@@ -184,7 +185,7 @@ check_remote_uinput_access(){
         print_warning "Remote system has no $UINPUT"
         print_warning "which is needed to forward input devices."
         print_warning "Please, configure it to load the uinput module or build uinput into the kernel."
-        ask_continue_or_exit     
+        ask_continue_or_exit
 			else #/dev/uinput was found
 		$SSH_EXEC "test -w $UINPUT" || E="noaccess"
 		$SSH_EXEC "test -r $UINPUT" || E="noaccess"
@@ -202,7 +203,7 @@ create_input_files() {
     tmpfile=/tmp/$$devices$$.txt
     sleep 0.1
     rm $EVDFILE &>/dev/null
-    
+
     #Ask user to generate input to auto select input devices to forward
     echo
     print_pending "Please, press a key on the keyboard you want to forward."
@@ -212,14 +213,14 @@ create_input_files() {
     print_ok "Got keyboard: $KBDNAME on $KBDDEV.\n"
     name_from_event $KBDDEV > $KBDFILE
     echo $KBDNAME > $EVDFILE
-    
+
     ANOTHER_DEVICE=1
     while [ $ANOTHER_DEVICE == 1 ]; do
         while true; do
             read -t 0.5 -N 255  #empty input buffer
             read -p "$(print_warning "Do you want to forward other devices? (y/n) ? ")" yn
             case $yn in
-                [Yy]* ) 
+                [Yy]* )
                         print_pending "Please, generate input with the device you want to forward."
                         EVDEV=$(get_input_event_device)
                         EVDEV_NAME=$(name_from_event $EVDEV)
@@ -232,15 +233,15 @@ create_input_files() {
                         fi
                         echo
                         ;;
-                [Nn]* ) 
+                [Nn]* )
                         ANOTHER_DEVICE=0; break;;
-                * ) 
+                * )
                         print_error "Please answer y or n.";;
             esac
         done
     done
-    
-    
+
+
     # create_hk_file
     # uses netevent to generate a file containing the key codes
     # to switch fullscreen and forward devices
@@ -285,7 +286,7 @@ finish() {
     $SSH_EXEC "kill \$(pidof FFPLAYEXE)" &>/dev/null
     $SSH_EXEC "kill \$(pidof $FFMPEGEXE)" &>/dev/null
     sleep 1
-#    $SSH_EXEC "killall -9 $FFPLAYEXE" &>/dev/null
+#   $SSH_EXEC "killall -9 $FFPLAYEXE" &>/dev/null
 #   $SSH_EXEC "killall -9 $FFMPEGEXE" &>/dev/null
     $SSH_EXEC "kill -9 \$(pidof $FFPLAYEXE)" &>/dev/null
     $SSH_EXEC "kill -9 \$(pidof $FFMPEGEXE)" &>/dev/null
@@ -294,10 +295,10 @@ finish() {
     #kill multiplexing ssh
     ssh -O exit -o ControlPath="$SSH_CONTROL_PATH" $RHOST 2>/dev/null
     kill $(list_descendants $$) &>/dev/null
-    
+
     rm $NESCRIPT &>/dev/null
     rm $NE_CMD_SOCK&>/dev/null
-    
+
 }
 
 #Test and report net download speed
@@ -308,18 +309,18 @@ benchmark_net() {
 }
 
 FS="F"
-setup_input_loop() {    
+setup_input_loop() {
     #Parse remote hotkeys and perform local actions (eg: Fullscreen switching)
     print_pending "Setting up input loop and forwarding devices"
     #Prepare netevent script
     i=1
     touch $NESCRIPT
     KBDNAME=$(<$KBDFILE)
-    
+
     # From 2.2.1, netevent splitted grab in grab-devices and write-events
     # it also introduced the -V switch; check if it reports anything with -V
     # to react to the change.
-    netevent_version=$(netevent 2>/dev/null -V) 
+    netevent_version=$(netevent 2>/dev/null -V)
     if ! [ "_$netevent_version" == "_" ] ; then netevent_is="NEW" ; fi
 
     for DEVICE in $(<$ICFILE_RUNTIME) ; do
@@ -344,7 +345,7 @@ setup_input_loop() {
     echo "output add myremote exec:$SSH_EXEC netevent create" >>$NESCRIPT
     echo "use myremote" >>$NESCRIPT
 
-    echo 
+    echo
     print_pending "Starting netevent daemon with script $NESCRIPT"
     netevent daemon -s $NESCRIPT $NE_CMD_SOCK | while read -r hotkey; do
         echo "read hotkey: " $hotkey
@@ -483,19 +484,18 @@ done
     #mpv, less latency, possibly hardware decoding, may hammer the cpu.
         #Untimed:
             #VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=auto --title="$WTITLE" --untimed --no-cache --profile=low-latency --opengl-glfinish=yes --opengl-swapinterval=0"
-        
+
         #speed=2 instead of untimed, seems smoother:
             VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=auto --title="$WTITLE" --speed=2 --no-cache --profile=low-latency --opengl-glfinish=yes --opengl-swapinterval=0 $VPLAYEROPTS"
 
         #less hammering, experimental, introduce some stuttering :/
             #VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=auto --title="$WTITLE" --speed=2 --no-cache --profile=low-latency --opengl-glfinish=yes --opengl-swapinterval=0 --cache-pause=yes --cache-pause-wait=0.001"
-            
+
         #older mpv versions, vaapi
             #VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=vaapi --vo=gpu --gpu-api=opengl --title="$WTITLE" --untimed --no-cache --audio-buffer=0  --vd-lavc-threads=1 --cache-pause=no --demuxer-lavf-o=fflags=+nobuffer --demuxer-lavf-analyzeduration=0.1 --video-sync=audio --interpolation=no  --opengl-glfinish=yes --opengl-swapinterval=0"
 
     AUDIOPLAYER="ffplay - -nostats -loglevel warning -flags low_delay -nodisp -probesize 32 -fflags nobuffer+fastseek+flush_packets -analyzeduration 0 -sync ext -af aresample=async=1:min_comp=0.1:first_pts=$AUDIO_DELAY_COMPENSATION"
 
-    
     if [ "$AUDIOENC" = "show" ] || [ "$VIDEOENC" = "show" ] ; then
         if [ "$AUDIOENC" = "show" ] ; then
             print_pending "Audio encoding presets: \
@@ -507,7 +507,8 @@ done
         if [ "$VIDEOENC" = "show" ] ; then
             print_pending "Video encoding presets:       \
             \n cpu:           \"$VIDEO_ENC_CPU\"         \
-            \n amdgpu:        \"$VIDEO_ENC_AMDGPU\"         \
+            \n cpurgb:        \"$VIDEO_ENC_CPU_RGB\"     \
+            \n amdgpu:        \"$VIDEO_ENC_AMDGPU\"      \
             \n amdgpu_hevc:   \"$VIDEO_ENC_AMDGPU_HEVC\" \
             \n intelgpu:      \"$VIDEO_ENC_INTELGPU\"    \
             \n nvgpu:         \"$VIDEO_ENC_NVGPU\"       \
@@ -515,8 +516,6 @@ done
         fi
         exit
     fi
-    
-#Sanity check
 
     me=$(basename "$0")
     if [ -z $RUSER ] || [ -z $RHOST ] || [ "$1" = "-h" ] ; then
@@ -541,7 +540,7 @@ done
         echo "                    Use AUTO to guess, use ALL to capture everything."
         echo "                    Eg: alsa_output.pci-0000_00_1b.0.analog-stereo.monitor"
         echo ""
-        echo "    --videoenc      Video encoder can be: cpu,amdgpu,amdgpu_hevc,intelgpu,nvgpu,zerocopy,custom or show"
+        echo "    --videoenc      Video encoder can be: cpu,cpurgb,amdgpu,amdgpu_hevc,intelgpu,nvgpu,zerocopy,custom or show"
         echo "                    \"zerocopy\" is experimental and causes ffmpeg to use kmsgrab"
         echo "                    to grab the framebuffer and pass frames to vaapi encoder."
         echo "                    You've to run 'setcap cap_sys_admin+ep $(which ffmpeg)' on the server to use zerocopy."
@@ -563,23 +562,23 @@ done
         echo "                    Eg: \"--video-output-levels=limited --video-rotate=90\""
         echo "    --rexec-before  Execute the specified script via 'sh' just before the connection"
         echo "    --rexec-exit    Execute the specified script via 'sh' before exiting the script"
-        #echo "    --videoplayer   
+        #echo "    --videoplayer
         echo
         echo "Example 1: john connecting to jserver, all defaults accepted"
         echo "    "$me" --user john --server jserver"
-        echo 
+        echo
         echo "Example 2:"
         echo "    john connecting to jserver on ssh port 322, streaming the display 0.0"
         echo "    remote setup is dual head and john selects the right monitor."
         echo "    Stream will be 128kbps for audio and 10000kbps for video:"
         echo "    Ex: $me -u john -s jserver -p 322 -d 0.0 -r 1920x1080 -o +1920,0 -f 60 -a 128 -v 10000"
-        echo 
+        echo
         echo "Example 3:"
         echo "    Bill connecting to jserver on ssh port 322, streaming the display 0.0"
         echo "    Stream will be 128kbps for audio and 10000kbps for video:"
         echo "    Bill wants untouched audio, 144fps and encode via intelgpu, he needs to correct video output levels"
         echo "    Ex: $me -u bill -s bserver -p 322 -d 0.0 -f 144 -v 80000 --audioenc pcm --videoenc intelgpu --vplayeropts \"--video-output-levels=limited\""
-        echo 
+        echo
         echo "user and host are mandatory."
         echo "default ssh-port: $RPORT"
         echo "default DISPLAY : $RDISPLAY"
@@ -592,18 +591,21 @@ done
         echo "default vbitrate: $VIDEO_BITRATE_MAX kbps"
         exit
     fi
+
+#Sanity checks
+
     RDISPLAY=":$RDISPLAY"
-    
+
     if [ "$AUDIOENC" = "custom" ] && [ "$AUDIO_ENC_CUSTOM" = "" ] ; then
         print_error "Custom audioencoder requested, but no custom encoder string provided. use --customa <something>"
         exit
     fi
-    
+
     if [ "$VIDEOENC" = "custom" ] && [ "$VIDEO_ENC_CUSTOM" = "" ] ; then
         print_notice "Custom video encoder requested, but no custom encoder string provided. use --customv <something>"
         exit
     fi
-      
+
     if [ ! -f "$EVDFILE" ] ; then
         print_error "Input configuration file "$EVDFILE" not found!"
         echo "Please, Select which devices to share."
@@ -612,7 +614,7 @@ done
     fi
 
 trap finish INT TERM EXIT
-    
+
 #Setup SSH Multiplexing
     SSH_CONTROL_PATH=$HOME/.config/ssh-rdp$$
     print_pending "Starting ssh multiplexed connection"
@@ -656,7 +658,7 @@ if [ "$VIDEO_BITRATE_MAX" = "AUTO" ] ; then
         VIDEO_BITRATE_MAX=100000 
     fi
     print_warning "Using $VIDEO_BITRATE_MAX Kbps"
-    echo  
+    echo
 fi
 
 echo
@@ -667,7 +669,7 @@ if ! [ "$REXEC_BEFORE" = "" ] ; then
     print_ok "$REXEC_BEFORE exited."
 fi
 
-setup_input_loop & 
+setup_input_loop &
 sleep 0.1 #(just to not shuffle output messages)
 PID1=$!
 
@@ -698,7 +700,7 @@ echo
         print_warning "Guessed following audio capture sources: $AUDIO_CAPTURE_SOURCE"
         echo
     fi
-    
+
 #Auto video grab size?
     if [ "$RES" = "AUTO" ] || [ "$RES" = "" ] ; then
         print_pending "Guessing remote resolution"
@@ -711,46 +713,47 @@ echo
 
 #Select video encoder:
     case  $VIDEOENC  in
-        cpu)       
+        cpu)
             VIDEO_ENC="$VIDEO_ENC_CPU" ;;
+        cpurgb)
+            VIDEO_ENC="$VIDEO_ENC_CPU_RGB" ;;
         nvgpu)
-
-            VIDEO_ENC="$VIDEO_ENC_NVGPU" ;;            
-        amdgpu)       
+            VIDEO_ENC="$VIDEO_ENC_NVGPU" ;;
+        amdgpu)
             VIDEO_ENC="$VIDEO_ENC_AMDGPU" ;;
-    amdgpu_hevc)
+        amdgpu_hevc)
         VIDEO_ENC="$VIDEO_ENC_AMDGPU_HEVC" ;;
         custom)
             VIDEO_ENC="$VIDEO_ENC_CUSTOM" ;;
-        intelgpu)       
-            VIDEO_ENC="$VIDEO_ENC_INTELGPU" ;;            
-        zerocopy)       
-            VIDEO_ENC="" ;;        
-        *)              
+        intelgpu)
+            VIDEO_ENC="$VIDEO_ENC_INTELGPU" ;;
+        zerocopy)
+            VIDEO_ENC="" ;;
+        *)
             print_error "Unsupported video encoder"
             exit ;;
     esac 
 
 #Select audio encoder:
     case  $AUDIOENC  in
-        opus)       
+        opus)
             AUDIO_ENC="$AUDIO_ENC_OPUS";;
         pcm)
-            AUDIO_ENC="$AUDIO_ENC_PCM" ;;                
+            AUDIO_ENC="$AUDIO_ENC_PCM" ;;
         custom)
             AUDIO_ENC="$AUDIO_ENC_CUSTOM" ;;
         null)
             AUDIO_ENC="null" ;;
-        *)              
+        *)
             print_error "Unsupported audio encoder"
             exit ;;
     esac 
 
-#Insert the scale filter by replacing the dummy filters null,null.    
-    if [ ! "$PRESCALE" = "" ] ; then 
+#Insert the scale filter by replacing the dummy filters null,null.
+    if [ ! "$PRESCALE" = "" ] ; then
         VIDEO_ENC=$(sed "s/null,null/scale=$PRESCALE/" <<< "$VIDEO_ENC")
     fi
-    
+
 #Grab Audio
     if ! [ "$AUDIO_ENC" = "null" ] ; then
         print_pending "Start audio streaming..."
@@ -790,7 +793,7 @@ echo
         RES=$(sed "s/\x/\:/" <<< "$RES")
         OFFSET=$(sed "s/\+//" <<< "$OFFSET")
         OFFSET=$(sed "s/\,/:/" <<< "$OFFSET")
-        if [ ! "$PRESCALE" = "" ] ; then 
+        if [ ! "$PRESCALE" = "" ] ; then
             NEWRES=$(sed "s/\x/\:/" <<< "$PRESCALE")
                 else
             NEWRES=$RES
