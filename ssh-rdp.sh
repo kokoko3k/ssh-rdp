@@ -303,9 +303,10 @@ finish() {
 
 #Test and report net download speed
 benchmark_net() {
-    $SSH_EXEC sh -c '"timeout 1 dd if=/dev/zero bs=1b "' | cat - > /tmp/zero
-    KBPS=$(( $(wc -c < /tmp/zero) *8/1000   ))
+    $SSH_EXEC sh -c '"timeout 1 dd if=/dev/zero bs=1b "' | cat - > /tmp/$$_zero_$$
+    KBPS=$(( $(wc -c < /tmp/$$_zero_$$) *8/1000   ))
     echo $KBPS
+    rm /tmp/$$_zero_$$
 }
 
 FS="F"
