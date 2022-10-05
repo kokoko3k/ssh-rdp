@@ -7,6 +7,7 @@ from an X11 session with minimum latency with support
 for video and audio streaming.
 
 Since the input control happens at low level by using netevent,
+(https://github.com/Blub/netevent)
 every input device can actually be forwarded to the remote host.
 This means keyboards,mouses,joypads,racing wheels and so on, thus
 allowing you to actually remotely play.
@@ -17,7 +18,7 @@ remotely and others locally.
 
 Software requirements:
     * Local and Remote: bash,ffmpeg,openssh,netevent
-    * Local: wmctrl, mpv, taskset
+    * Local: wmctrl, mpv >=0.29, taskset
     * Remote: xdpyinfo,pulseaudio
 
 Special requirements for input forwarding:
