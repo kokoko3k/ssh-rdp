@@ -419,6 +419,9 @@ do
         -p|--port)
             RPORT="$2"
             shift ; shift ;;
+        --sshopt)
+            SSHOPT="$2"
+            shift ; shift ;;
         -d|--display)
             RDISPLAY="$2"
             shift ; shift ;;
@@ -530,6 +533,7 @@ done
         echo "-s, --server        Remote host to connect to"
         echo "-u, --user          ssh username"
         echo "-p, --port          ssh port"
+        echo "    --sshopt        pass additional ssh option (omit -o)"
         echo "-d, --display       Remote display (eg: 0.0)"
         echo "-r, --resolution    Grab size (eg: 1920x1080) or AUTO"
         echo "-o, --offset        Grab offset (eg: +1920,0)"
@@ -619,7 +623,7 @@ trap finish INT TERM EXIT
 #Setup SSH Multiplexing
     SSH_CONTROL_PATH=$HOME/.config/ssh-rdp$$
     print_pending "Starting ssh multiplexed connection"
-    if ssh -fN -o ControlMaster=auto -o ControlPath=$SSH_CONTROL_PATH -o ControlPersist=60 $RUSER@$RHOST -p $RPORT ; then
+    if ssh -fN -o ControlMaster=auto -o ControlPath=$SSH_CONTROL_PATH -o ControlPersist=60 -o "$SSHOPT" $RUSER@$RHOST -p $RPORT; then
         print_ok "Started ssh multiplexed connection"
             else
         print_warning "Cannot start ssh multiplexed connection"
