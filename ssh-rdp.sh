@@ -547,11 +547,12 @@ done
         echo "                    Use AUTO to guess, use ALL to capture everything."
         echo "                    Eg: alsa_output.pci-0000_00_1b.0.analog-stereo.monitor"
         echo ""
-        echo "    --videoenc      Video encoder can be: cpu,cpurgb,amdgpu,amdgpu_hevc,intelgpu,nvgpu,nvgpu_hevc,zerocopy,custom or show"
+        echo "    --videoenc      Video encoder can be: cpu,cpurgb,amdgpu,amdgpu_hevc,intelgpu,nvgpu,nvgpu_hevc,zerocopy,custom,none or show"
         echo "                    \"zerocopy\" is experimental and causes ffmpeg to use kmsgrab"
         echo "                    to grab the framebuffer and pass frames to vaapi encoder."
         echo "                    You've to run 'setcap cap_sys_admin+ep $(which ffmpeg)' on the server to use zerocopy."
         echo "                    --display, --follow are ignored when using zerocopy."
+        echo "                    specify \"none\" to not transmit video at all."
         echo "                    specify \"show\" to print the options for each preset."
         echo ""
         echo "    --customv       Specify a string for video encoder stuff when videoenc is set to custom"
@@ -738,6 +739,8 @@ echo
             VIDEO_ENC="$VIDEO_ENC_INTELGPU" ;;
         zerocopy)
             VIDEO_ENC="" ;;
+        none)
+            VIDEO_ENC="" ;;
         *)
             print_error "Unsupported video encoder"
             exit ;;
@@ -790,7 +793,9 @@ echo
     #    "$VIDEO_ENC" -f_strict experimental -syncpoints none -f nut -\
     #" | $VIDEOPLAYER
 
-    if [ ! "$VIDEOENC" = "zerocopy" ] ; then
+    if [ "$VIDEOENC" = "none" ] ; then
+        sleep 365d
+    elif [ ! "$VIDEOENC" = "zerocopy" ] ; then
         $SSH_EXEC sh -c "\
             export DISPLAY=$RDISPLAY ;\
             export VAAPI_DISABLE_INTERLACE=1;\
