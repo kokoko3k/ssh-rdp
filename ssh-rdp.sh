@@ -35,6 +35,7 @@
     VIDEO_ENC_CPU="-threads 1 -vcodec libx264 -thread_type slice -slices 1 -level 32 -preset ultrafast -tune zerolatency -intra-refresh 1 -x264opts keyint=$FPS:sliced_threads=1 -pix_fmt nv12 -vf 'null,null'"
     VIDEO_ENC_CPU_RGB="-threads 1 -vcodec libx264rgb -profile:v high444 -thread_type slice -slices 1 -level 32 -preset ultrafast -tune zerolatency -intra-refresh 1 -x264opts keyint=$FPS:sliced_threads=1 -pix_fmt bgr24 -vf 'null,null'"
     VIDEO_ENC_NVGPU="-threads 1 -c:v h264_nvenc -preset llhq -delay 0 -zerolatency 1 -vf 'null,null'"
+    VIDEO_ENC_NVGPU_HEVC="-threads 1 -c:v hevc_nvenc -preset llhq -delay 0 -zerolatency 1 -vf 'null,null'"
     VIDEO_ENC_AMDGPU="-threads 1 -vaapi_device /dev/dri/renderD128 -c:v h264_vaapi -bf 0 -vf 'null,null,hwupload,scale_vaapi=format=nv12'"
     VIDEO_ENC_AMDGPU_HEVC="-threads 1 -vaapi_device /dev/dri/renderD128 -c:v hevc_vaapi -bf 0 -vf 'null,null,hwupload,scale_vaapi=format=nv12'"
     VIDEO_ENC_INTELGPU="-threads 1 -vaapi_device /dev/dri/renderD128 -c:v h264_vaapi -bf 0 -vf 'null,null,hwupload,scale_vaapi=format=nv12'"
@@ -516,6 +517,7 @@ done
             \n amdgpu_hevc:   \"$VIDEO_ENC_AMDGPU_HEVC\" \
             \n intelgpu:      \"$VIDEO_ENC_INTELGPU\"    \
             \n nvgpu:         \"$VIDEO_ENC_NVGPU\"       \
+            \n nvgpu_hevc:    \"$VIDEO_ENC_NVGPU_HEVC\"  \
             \n"
         fi
         exit
@@ -545,7 +547,7 @@ done
         echo "                    Use AUTO to guess, use ALL to capture everything."
         echo "                    Eg: alsa_output.pci-0000_00_1b.0.analog-stereo.monitor"
         echo ""
-        echo "    --videoenc      Video encoder can be: cpu,cpurgb,amdgpu,amdgpu_hevc,intelgpu,nvgpu,zerocopy,custom or show"
+        echo "    --videoenc      Video encoder can be: cpu,cpurgb,amdgpu,amdgpu_hevc,intelgpu,nvgpu,nvgpu_hevc,zerocopy,custom or show"
         echo "                    \"zerocopy\" is experimental and causes ffmpeg to use kmsgrab"
         echo "                    to grab the framebuffer and pass frames to vaapi encoder."
         echo "                    You've to run 'setcap cap_sys_admin+ep $(which ffmpeg)' on the server to use zerocopy."
@@ -724,10 +726,12 @@ echo
             VIDEO_ENC="$VIDEO_ENC_CPU_RGB" ;;
         nvgpu)
             VIDEO_ENC="$VIDEO_ENC_NVGPU" ;;
+        nvgpu_hevc)
+            VIDEO_ENC="$VIDEO_ENC_NVGPU_HEVC" ;;
         amdgpu)
             VIDEO_ENC="$VIDEO_ENC_AMDGPU" ;;
         amdgpu_hevc)
-        VIDEO_ENC="$VIDEO_ENC_AMDGPU_HEVC" ;;
+            VIDEO_ENC="$VIDEO_ENC_AMDGPU_HEVC" ;;
         custom)
             VIDEO_ENC="$VIDEO_ENC_CUSTOM" ;;
         intelgpu)
@@ -793,7 +797,7 @@ echo
             $FFMPEGEXE -nostdin -loglevel warning -y -f x11grab "$FOLLOW_STRING" -framerate $FPS -video_size $RES -i "$RDISPLAY""$OFFSET" -sws_flags $SCALE_FLT -b:v "$VIDEO_BITRATE_MAX"k  -maxrate "$VIDEO_BITRATE_MAX"k \
             "$VIDEO_ENC" -f_strict experimental -syncpoints none -f nut -\
         " | $VIDEOPLAYER
-            else
+    else
         #Zero copy test:
         RES=$(sed "s/\x/\:/" <<< "$RES")
         OFFSET=$(sed "s/\+//" <<< "$OFFSET")
@@ -808,4 +812,4 @@ echo
                 $FFMPEGEXE -nostdin  -loglevel warning  -y -framerate $FPS -f kmsgrab -i -  -sws_flags $SCALE_FLT -b:v "$VIDEO_BITRATE_MAX"k -maxrate "$VIDEO_BITRATE_MAX"k \
                 -vf hwmap=derive_device=vaapi,crop="$RES:$OFFSET",scale_vaapi="$NEWRES":format=nv12 -c:v h264_vaapi -bf 0  -b:v "$VIDEO_BITRATE_MAX"k  -maxrate "$VIDEO_BITRATE_MAX"k -f_strict experimental -syncpoints none  -f nut -\
                 " | $VIDEOPLAYER
-        fi
+    fi
