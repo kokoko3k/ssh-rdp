@@ -331,14 +331,14 @@ setup_input_loop() {
         if  [ "$DEVNAME" = "$KBDNAME" ] ; then # Device is keyboard -> add it and setup hotkeys
             echo "device add mykbd$i /dev/input/$DEVICE"  >>$NESCRIPT
             if [ $netevent_is == "NEW" ] ; then 
-                echo "hotkey add mykbd$i key:$GRAB_HOTKEY:1 'write-events toggle ; grab-devices toggle'" >>$NESCRIPT
+                echo "hotkey add mykbd$i key:$GRAB_HOTKEY:0 'write-events toggle ; grab-devices toggle'" >>$NESCRIPT
                   else
-                echo "hotkey add mykbd$i key:$GRAB_HOTKEY:1 grab toggle" >>$NESCRIPT
+                echo "hotkey add mykbd$i key:$GRAB_HOTKEY:0 grab toggle" >>$NESCRIPT
             fi
             echo "action set grab-changed exec '/usr/bin/echo Is input forwarded 1=Yes,0=No ? \$NETEVENT_GRABBING' " >>$NESCRIPT
-            echo "hotkey add mykbd$i key:$GRAB_HOTKEY:0 nop" >>$NESCRIPT
-            echo "hotkey add mykbd$i key:$FULLSCREENSWITCH_HOTKEY:1 exec \"/usr/bin/echo FULLSCREENSWITCH_HOTKEY\"" >>$NESCRIPT
-            echo "hotkey add mykbd$i key:$FULLSCREENSWITCH_HOTKEY:0 nop" >>$NESCRIPT
+            echo "hotkey add mykbd$i key:$GRAB_HOTKEY:1 nop" >>$NESCRIPT
+            echo "hotkey add mykbd$i key:$FULLSCREENSWITCH_HOTKEY:0 exec \"/usr/bin/echo FULLSCREENSWITCH_HOTKEY\"" >>$NESCRIPT
+            echo "hotkey add mykbd$i key:$FULLSCREENSWITCH_HOTKEY:1 nop" >>$NESCRIPT
                 else # Device is not keyboard -> just add it
             echo "device add dev$i /dev/input/$DEVICE"  >>$NESCRIPT
         fi
