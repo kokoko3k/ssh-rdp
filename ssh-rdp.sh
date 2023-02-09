@@ -159,7 +159,7 @@ function get_input_event_device(){
 name_from_event(){
     #es: name_from_event event3
     #Logitech G203 Prodigy Gaming Mouse
-    grep 'Name=\|Handlers' /proc/bus/input/devices|grep -B1 "$1"|head -n 1|cut -d \" -f 2
+    grep 'Name=\|Handlers' /proc/bus/input/devices|grep -w -B1 "$1"|head -n 1|cut -d \" -f 2
 }
 
 events_from_name(){
