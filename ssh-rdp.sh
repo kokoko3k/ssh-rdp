@@ -620,7 +620,8 @@ done
         create_input_files
     fi
 
-trap finish INT TERM EXIT
+trap finish EXIT
+trap exit INT TERM
 
 #Setup SSH Multiplexing
     SSH_CONTROL_PATH=$HOME/.config/ssh-rdp$$
