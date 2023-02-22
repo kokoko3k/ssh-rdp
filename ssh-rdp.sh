@@ -525,7 +525,7 @@ done
 
     me=$(basename "$0")
     if [ -z $RUSER ] || [ -z $RHOST ] || [ "$1" = "-h" ] ; then
-        echo Please edit "$me" to suid your needs and/or use the following options:
+        echo Please edit "$me" to suit your needs and/or use the following options:
         echo Usage: "$me" "[OPTIONS]"
         echo ""
         echo "OPTIONS"
@@ -620,7 +620,8 @@ done
         create_input_files
     fi
 
-trap finish INT TERM EXIT
+trap finish EXIT
+trap exit INT TERM
 
 #Setup SSH Multiplexing
     SSH_CONTROL_PATH=$HOME/.config/ssh-rdp$$

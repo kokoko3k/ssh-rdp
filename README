@@ -53,9 +53,11 @@ Use ssh-rdp.sh inputconfig to create or change the input config file
 -s, --server        Remote host to connect to
 -u, --user          ssh username
 -p, --port          ssh port
+    --sshopt        pass additional ssh option (omit -o)
 -d, --display       Remote display (eg: 0.0)
 -r, --resolution    Grab size (eg: 1920x1080) or AUTO
 -o, --offset        Grab offset (eg: +1920,0)
+    --follow        pan the grabbed area when the cursor reaches the border
     --prescale      Scale video before encoding (eg: 1280x720).
                     Has impact on remote cpu use and can increase latency too.
 -f, --fps           Grabbed frames per second
@@ -63,11 +65,11 @@ Use ssh-rdp.sh inputconfig to create or change the input config file
                     Use AUTO to guess, use ALL to capture everything.
                     Eg: alsa_output.pci-0000_00_1b.0.analog-stereo.monitor
 
-    --videoenc      Video encoder can be: cpu,amdgpu,intelgpu,nvgpu,zerocopy,custom or show
+    --videoenc      Video encoder can be: cpu,cpurgb,amdgpu,amdgpu_hevc,intelgpu,nvgpu,nvgpu_hevc,zerocopy,custom or show
                     "zerocopy" is experimental and causes ffmpeg to use kmsgrab
                     to grab the framebuffer and pass frames to vaapi encoder.
-                    You've to run 'setcap cap_sys_admin+ep /bin/ffmpeg' on the server to use zerocopy.
-                    --display is ignored when using zerocopy.
+                    You've to run 'setcap cap_sys_admin+ep /usr/bin/ffmpeg' on the server to use zerocopy.
+                    --display, --follow are ignored when using zerocopy.
                     specify "show" to print the options for each preset.
 
     --customv       Specify a string for video encoder stuff when videoenc is set to custom
@@ -86,7 +88,7 @@ Use ssh-rdp.sh inputconfig to create or change the input config file
     --rexec-before  Execute the specified script via 'sh' just before the connection
     --rexec-exit    Execute the specified script via 'sh' before exiting the script
 
-      
+
 
 Examples:
 -------------------------------------------------------------------------------
