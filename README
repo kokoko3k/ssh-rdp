@@ -20,6 +20,14 @@ Software requirements:
     * Local and Remote: bash,ffmpeg,openssh,netevent
     * Local: wmctrl, mpv >=0.29, taskset
     * Remote: xdpyinfo,pulseaudio
+    * If you see Invalid MIT-MAGIC-COOKIE-1 key among the errors,
+      then probably the remote system won't allow remote users
+      to start local X11 applications.
+      The easiest way to solve this is to execute the following
+      command on the remote side: "xhost +local:"
+      A convenient way to do that is via an autostart script
+      executed automatically by your Desktop environment
+      when the user do the local login.
 
 Special requirements for input forwarding:
     * Local user need to access files under /dev/input,
