@@ -27,7 +27,7 @@ Software requirements:
       command on the remote side: "xhost +local:"
       A convenient way to do that is via an autostart script
       executed automatically by your Desktop environment
-      when the user do the local login.
+      when the user does the local login.
 
 Special requirements for input forwarding:
     * Local user need to access files under /dev/input,
