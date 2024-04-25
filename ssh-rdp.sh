@@ -477,6 +477,9 @@ do
         --rexec-exit)
             REXEC_EXIT="$2"
             shift ; shift ;;
+        --rexec-late)
+            REXEC_LATE="$2"
+            shift ; shift ;;
         *)
             shift ;;
     esac
@@ -569,6 +572,7 @@ done
         echo "                    Eg: \"--video-output-levels=limited --video-rotate=90\""
         echo "    --rexec-before  Execute the specified script via 'sh' just before the connection"
         echo "    --rexec-exit    Execute the specified script via 'sh' before exiting the script"
+        echo "    --rexec-late    Execute the specified script via 'sh' after input(s) forward, before video grab"
         #echo "    --videoplayer
         echo
         echo "Example 1: john connecting to jserver, all defaults accepted"
@@ -781,6 +785,11 @@ echo
         PID4=$!
     fi
 
+    if ! [ "$REXEC_LATE" = "" ] ; then
+        print_pending "Executing $REXEC_LATE"
+        $SSH_EXEC "bash -s" < "$REXEC_LATE"
+        print_ok "$REXEC_LATE exited."
+    fi
 
 #Grab Video
     print_pending "Start video streaming..."
