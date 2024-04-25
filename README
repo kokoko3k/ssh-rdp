@@ -95,6 +95,7 @@ Use ssh-rdp.sh inputconfig to create or change the input config file
                     Eg: "--video-output-levels=limited --video-rotate=90"
     --rexec-before  Execute the specified script via 'sh' just before the connection
     --rexec-exit    Execute the specified script via 'sh' before exiting the script
+    --rexec-late    Execute the specified script via 'sh' after input(s) forward, before video grab
 
 
 
