@@ -491,13 +491,13 @@ done
 
     #mpv, less latency, possibly hardware decoding, may hammer the cpu.
         #Untimed:
-            #VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=auto --title="$WTITLE" --untimed --no-cache --profile=low-latency --opengl-glfinish=yes --opengl-swapinterval=0"
+            #VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=auto --title="$WTITLE" --untimed --no-cache --profile=low-latency --opengl-glfinish=yes --vulkan-swap-mode=immediate --swapchain-depth=1 --opengl-swapinterval=0"
 
         #speed=2 instead of untimed, seems smoother:
-            VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=auto --title="$WTITLE" --speed=2 --no-cache --profile=low-latency --opengl-glfinish=yes --opengl-swapinterval=0 $VPLAYEROPTS"
+            VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=auto --title="$WTITLE" --speed=2 --no-cache --profile=low-latency --opengl-glfinish=yes --opengl-swapinterval=0 --vulkan-swap-mode=immediate --swapchain-depth=1 $VPLAYEROPTS"
 
         #less hammering, experimental, introduce some stuttering :/
-            #VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=auto --title="$WTITLE" --speed=2 --no-cache --profile=low-latency --opengl-glfinish=yes --opengl-swapinterval=0 --cache-pause=yes --cache-pause-wait=0.001"
+            #VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=auto --title="$WTITLE" --speed=2 --no-cache --profile=low-latency --opengl-glfinish=yes --opengl-swapinterval=0 --vulkan-swap-mode=immediate --swapchain-depth=1 --cache-pause=yes --cache-pause-wait=0.001"
 
         #older mpv versions, vaapi
             #VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=vaapi --vo=gpu --gpu-api=opengl --title="$WTITLE" --untimed --no-cache --audio-buffer=0  --vd-lavc-threads=1 --cache-pause=no --demuxer-lavf-o=fflags=+nobuffer --demuxer-lavf-analyzeduration=0.1 --video-sync=audio --interpolation=no  --opengl-glfinish=yes --opengl-swapinterval=0"
