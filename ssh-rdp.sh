@@ -250,10 +250,14 @@ create_input_files() {
         rm $HKFILE &>/dev/null
         sleep 0.1
         echo ; print_pending "Press the key to that will be used to forward/unforward input devices"
-        GRAB_HOTKEY=$(netevent show $KBDDEV 3 -g | grep KEY |cut -d ":" -f 2) ; print_ok "got:$GRAB_HOTKEY"
+        GRAB_HOTKEY=$(netevent show $KBDDEV 3 -g | grep KEY |cut -d ":" -f 2) ;
+        GRAB_HOTKEY=$(echo $GRAB_HOTKEY|cut -d " " -f 1)
+        print_ok "got:$GRAB_HOTKEY"
         sleep 0.5
         echo ; print_pending "Now press the key that will be used to switch fullscreen state"
-        FULLSCREENSWITCH_HOTKEY=$(netevent show $KBDDEV 3 -g | grep KEY |cut -d ":" -f 2) ; print_ok "got:$FULLSCREENSWITCH_HOTKEY"
+        FULLSCREENSWITCH_HOTKEY=$(netevent show $KBDDEV 3 -g | grep KEY |cut -d ":" -f 2) ; 
+        FULLSCREENSWITCH_HOTKEY=$(echo $FULLSCREENSWITCH_HOTKEY|cut -d " " -f 1)
+        print_ok "got:$FULLSCREENSWITCH_HOTKEY"
         echo $GRAB_HOTKEY $FULLSCREENSWITCH_HOTKEY > $HKFILE
 
         read GRAB_HOTKEY FULLSCREENSWITCH_HOTKEY <<< $(<$HKFILE)
