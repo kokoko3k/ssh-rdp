@@ -284,7 +284,7 @@ finish() {
 
     if ! [ "$REXEC_EXIT" = "" ] ; then
         print_pending "Executing $REXEC_EXIT"
-        $SSH_EXEC "bash -s" < "$REXEC_EXIT"
+        $SSH_EXEC "sh <(echo $REXEC_EXIT)"
         print_ok "$REXEC_EXIT exited."
     fi
 
@@ -690,7 +690,7 @@ echo
 
 if ! [ "$REXEC_BEFORE" = "" ] ; then
     print_pending "Executing $REXEC_BEFORE"
-    $SSH_EXEC "bash -s" < "$REXEC_BEFORE"
+    $SSH_EXEC "sh <(echo $REXEC_BEFORE)"
     print_ok "$REXEC_BEFORE exited."
 fi
 
@@ -800,7 +800,7 @@ echo
 
     if ! [ "$REXEC_LATE" = "" ] ; then
         print_pending "Executing $REXEC_LATE"
-        $SSH_EXEC "bash -s" < "$REXEC_LATE"
+        $SSH_EXEC "sh <(echo $REXEC_LATE)"
         print_ok "$REXEC_LATE exited."
     fi
 
