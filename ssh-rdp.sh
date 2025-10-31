@@ -61,7 +61,10 @@
     #Prescaling quality see https://ffmpeg.org/ffmpeg-scaler.html for possible values
     SCALE_FLT="fast_bilinear" #bilinear,bicubic,lanczos,spline...
 
-    #Remote window title
+    #zerocopy device selection
+    ZEROCOPY_DEVICE="/dev/dri/card0"
+    
+#Remote window title
     #WTITLE="$RUSER@$RHOST""$RDISPLAY"
     WTITLE="ssh-rdp""-"\["$$"\]
 
@@ -451,6 +454,9 @@ do
         --videoenc)
             VIDEOENC="$2"
             shift ; shift ;;
+        --zerocopy-device)
+            ZEROCOPY_DEVICE="$2"
+            shift ; shift ;;
         --audioenc)
             AUDIOENC="$2"
             shift ; shift ;;
@@ -561,6 +567,9 @@ done
         echo "                    --display, --follow are ignored when using zerocopy."
         echo "                    specify \"show\" to print the options for each preset."
         echo ""
+        echo "    --zerocopy-device zerocopy encoding only: specify the dri device to use."
+        echo "                    Default is /dev/dri/card0"
+        echo ""
         echo "    --customv       Specify a string for video encoder stuff when videoenc is set to custom"
         echo "                    Eg: \"-threads 1 -c:v h264_nvenc -preset llhq -delay 0 -zerolatency 1\""
         echo "    --audioenc      Audio encoder can be: opus,pcm,null,custom or show"
@@ -575,8 +584,8 @@ done
         echo "    --vplayeropts   Additional options to pass to videoplayer"
         echo "                    Eg: \"--video-output-levels=limited --video-rotate=90\""
         echo "    --rexec-before  Execute the specified script on the remote host via 'sh' just before the connection"
-        echo "    --rexec-exit    Execute the specified script on the remote host  via 'sh' before exiting the script"
-        echo "    --rexec-late    Execute the specified script on the remote host  via 'sh' after input(s) forward, before video grab"
+        echo "    --rexec-exit    Execute the specified script on the remote host via 'sh' before exiting the script"
+        echo "    --rexec-late    Execute the specified script on the remote host via 'sh' after input(s) forward, before video grab"
         #echo "    --videoplayer
         echo
         echo "Example 1: john connecting to jserver, all defaults accepted"
@@ -823,7 +832,7 @@ echo
         fi
 
         $SSH_EXEC sh -c ";\
-                $FFMPEGEXE -nostdin  -loglevel warning  -y -framerate $FPS -f kmsgrab -i -  -sws_flags $SCALE_FLT -b:v "$VIDEO_BITRATE_MAX"k -maxrate "$VIDEO_BITRATE_MAX"k \
+                $FFMPEGEXE -nostdin  -loglevel warning  -y -framerate $FPS -device $ZEROCOPY_DEVICE -f kmsgrab -i -  -sws_flags $SCALE_FLT -b:v "$VIDEO_BITRATE_MAX"k -maxrate "$VIDEO_BITRATE_MAX"k \
                 -vf hwmap=derive_device=vaapi,crop="$RES:$OFFSET",scale_vaapi="$NEWRES":format=nv12 -c:v h264_vaapi -bf 0  -b:v "$VIDEO_BITRATE_MAX"k  -maxrate "$VIDEO_BITRATE_MAX"k -f_strict experimental -syncpoints none  -f nut -\
                 " | $VIDEOPLAYER
     fi
