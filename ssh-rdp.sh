@@ -259,7 +259,7 @@ create_input_files() {
         sleep 0.5
         echo ; print_pending "Now press the key that will be used to switch fullscreen state"
         FULLSCREENSWITCH_HOTKEY=$(netevent show $KBDDEV 3 -g | grep KEY |cut -d ":" -f 2) ; 
-        FULLSCREENSWITCH_HOTKEY=$(echo ssh-rdpssh-|cut -d " " -f 1)
+        FULLSCREENSWITCH_HOTKEY=$(echo $FULLSCREENSWITCH_HOTKEY|cut -d " " -f 1)
         print_ok "got:$FULLSCREENSWITCH_HOTKEY"
         echo $GRAB_HOTKEY $FULLSCREENSWITCH_HOTKEY > $HKFILE
 
