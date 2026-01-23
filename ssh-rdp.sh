@@ -55,6 +55,8 @@
 
     AUDIOLATENCYHACK=""
 
+    RPA_LATENCY_MSEC=""
+    
     #Prescale desktop before sending?
     PRESCALE="" # eg: "" or something like "1280x720"
 
@@ -457,6 +459,9 @@ do
         --alatencyhack)
             AUDIOLATENCYHACK="$2"
             shift ; shift ;;
+        --palatencymsec)
+            RPA_LATENCY_MSEC="$2"
+            shift ; shift ;;
         --videoenc)
             VIDEOENC="$2"
             shift ; shift ;;
@@ -579,6 +584,11 @@ done
         echo "    --alatencyhack  Alters timestamps to lower audio latency."
         echo "                    The higher the value, the lower the audio delay."
         echo "                    Setting this too high will likely produce crackling sound try in range 0-8000 (4000 is a good start)"
+        echo "                    Requires a VERY stable connection"
+        echo ""
+        echo "    --palatencymsec Set PULSE_LATENCY_MSEC on the remote side prior to capturing audio."
+        echo "                    This pulseaudio environment variable alters the capture latency but may have"
+        echo "                    unpredictable results; if values of 20..60 gives big latencies, try 1."
         echo ""
         echo "    --videoenc      Video encoder can be: cpu,cpurgb,amdgpu,amdgpu_hevc,intelgpu,nvgpu,nvgpu_hevc,zerocopy,custom or show"
         echo "                    \"zerocopy\" is experimental and causes ffmpeg to use kmsgrab"
@@ -588,8 +598,8 @@ done
         echo "                    \"null\" disables video grabbing completely"
         echo "                    specify \"show\" to print the options for each preset."
         echo ""
-        echo "    --zerocopy-device zerocopy encoding only: specify the dri device to use."
-        echo "                    Default is /dev/dri/card0"
+        echo "    --zerocopy-device  zerocopy encoding only: specify the dri device to use."
+        echo "                       Default is /dev/dri/card0"
         echo ""
         echo "    --customv       Specify a string for video encoder stuff when videoenc is set to custom"
         echo "                    Eg: \"-threads 1 -c:v h264_nvenc -preset llhq -delay 0 -zerolatency 1\""
