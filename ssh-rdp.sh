@@ -53,9 +53,7 @@
     VIDEO_BITRATE_MAX_SCALE="80" # When VIDEO_BITRATE_MAX is set to "AUTO", only use this percentual of it.
     AUDIO_BITRATE=128 #kbps
 
-    AUDIO_DELAY_COMPENSATION="4000" #The higher the value, the lower the audio delay.
-                                    #Setting this too high will likely produce crackling sound.
-                                    #Try in range 0-8000
+    AUDIOLATENCYHACK=""
 
     #Prescale desktop before sending?
     PRESCALE="" # eg: "" or something like "1280x720"
@@ -456,6 +454,9 @@ do
         --pafragment)
             PA_CAPTURE_FRAGMENT="$2"
             shift ; shift ;;
+        --alatencyhack)
+            AUDIOLATENCYHACK="$2"
+            shift ; shift ;;
         --videoenc)
             VIDEOENC="$2"
             shift ; shift ;;
@@ -517,8 +518,13 @@ done
         #older mpv versions, vaapi
             #VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=vaapi --vo=gpu --gpu-api=opengl --title="$WTITLE" --untimed --no-cache --audio-buffer=0  --vd-lavc-threads=1 --cache-pause=no --demuxer-lavf-o=fflags=+nobuffer --demuxer-lavf-analyzeduration=0.1 --video-sync=audio --interpolation=no  --opengl-glfinish=yes --opengl-swapinterval=0"
 
-    AUDIOPLAYER="ffplay - -nostats -loglevel warning -flags low_delay -nodisp -probesize 32 -fflags nobuffer+fastseek+flush_packets -analyzeduration 0 -sync ext -af aresample=async=1:min_comp=0.1:first_pts=$AUDIO_DELAY_COMPENSATION"
+    if [ "$AUDIOLATENCYHACK" != "" ] ; then
+        AUDIO_LATENCY_HACK="-af aresample=async=1:min_comp=0.1:first_pts=$AUDIOLATENCYHACK"
+    fi
 
+    AUDIOPLAYER="ffplay - -nostats -loglevel warning -flags low_delay -nodisp -probesize 32 -fflags nobuffer+fastseek+flush_packets -analyzeduration 0 -sync ext $AUDIO_LATENCY_HACK"
+    
+    
     if [ "$AUDIOENC" = "show" ] || [ "$VIDEOENC" = "show" ] ; then
         if [ "$AUDIOENC" = "show" ] ; then
             print_pending "Audio encoding presets: \
@@ -566,9 +572,13 @@ done
         echo "                    Use AUTO to guess, use ALL to capture everything."
         echo "                    Eg: alsa_output.pci-0000_00_1b.0.analog-stereo.monitor"
         echo ""
-        echo "    --pafragment    Specify the remote fragment size to grab audio"
+        echo "    --pafragment    Specify the remote fragment size to grab audio; affects audio latency."
         echo "                    use -1 to let ffmpeg use its default value"
         echo "                    if the option is unused, a default value of 1024 will be used"
+        echo ""
+        echo "    --alatencyhack  Alters timestamps to lower audio latency."
+        echo "                    The higher the value, the lower the audio delay."
+        echo "                    Setting this too high will likely produce crackling sound try in range 0-8000 (4000 is a good start)"
         echo ""
         echo "    --videoenc      Video encoder can be: cpu,cpurgb,amdgpu,amdgpu_hevc,intelgpu,nvgpu,nvgpu_hevc,zerocopy,custom or show"
         echo "                    \"zerocopy\" is experimental and causes ffmpeg to use kmsgrab"
