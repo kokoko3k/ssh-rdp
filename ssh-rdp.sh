@@ -41,6 +41,8 @@
     VIDEO_ENC_INTELGPU="-threads 1 -vaapi_device /dev/dri/renderD128 -c:v h264_vaapi -bf 0 -vf 'null,null,hwupload,scale_vaapi=format=nv12'"
     #VIDEO_ENC_INTELGPU="-threads 1 -vaapi_device /dev/dri/renderD128 -c:v h264_vaapi -bf 0 -vf 'null,null,format=nv12,hwupload'"
 
+    PA_CAPTURE_FRAGMENT="1024"
+    
     AUDIO_ENC_OPUS="-acodec libopus -vbr off -application lowdelay -frame_duration 10"    #opus, low delay great quality
     AUDIO_ENC_PCM="-acodec pcm_s16le "    #pcm, low delay, best quality
 
@@ -451,6 +453,9 @@ do
         --pasource)
             AUDIO_CAPTURE_SOURCE="$2"
             shift ; shift ;;
+        --pafragment)
+            PA_CAPTURE_FRAGMENT="$2"
+            shift ; shift ;;
         --videoenc)
             VIDEOENC="$2"
             shift ; shift ;;
@@ -560,6 +565,10 @@ done
         echo "    --pasource      Capture from the specified pulseaudio source. (experimental and may introduce delay)"
         echo "                    Use AUTO to guess, use ALL to capture everything."
         echo "                    Eg: alsa_output.pci-0000_00_1b.0.analog-stereo.monitor"
+        echo ""
+        echo "    --pafragment    Specify the remote fragment size to grab audio"
+        echo "                    use -1 to let ffmpeg use its default value"
+        echo "                    if the option is unused, a default value of 1024 will be used"
         echo ""
         echo "    --videoenc      Video encoder can be: cpu,cpurgb,amdgpu,amdgpu_hevc,intelgpu,nvgpu,nvgpu_hevc,zerocopy,custom or show"
         echo "                    \"zerocopy\" is experimental and causes ffmpeg to use kmsgrab"
@@ -786,12 +795,19 @@ echo
         echo
     fi
 
-
+#pa fragment
+    if [ "$PA_CAPTURE_FRAGMENT" = "-1" ] ; then
+        FRAGMENT_SIZE_STRING=""
+    else
+        FRAGMENT_SIZE_STRING=" -fragment_size $PA_CAPTURE_FRAGMENT"
+    fi
+    
+#Stream audio
     if ! [ "$AUDIO_ENC" = "null" ] ; then
         print_pending "Start audio streaming..."
 
         for ASOURCE in $AUDIO_CAPTURE_SOURCE ; do
-            AUDIO_SOURCE_GRAB_STRING="$AUDIO_SOURCE_GRAB_STRING  -f pulse -ac 2 -fragment_size 1024 -i $ASOURCE "
+            AUDIO_SOURCE_GRAB_STRING="$AUDIO_SOURCE_GRAB_STRING  -f pulse -ac 2 $FRAGMENT_SIZE_STRING -i $ASOURCE "
         done
         #insert amix
         AUDIO_SOURCE_GRAB_STRING="$AUDIO_SOURCE_GRAB_STRING -filter_complex amix=inputs=$(echo $AUDIO_CAPTURE_SOURCE|wc -w)"
