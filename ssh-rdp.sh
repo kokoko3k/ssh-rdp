@@ -531,6 +531,7 @@ done
             \n intelgpu:      \"$VIDEO_ENC_INTELGPU\"    \
             \n nvgpu:         \"$VIDEO_ENC_NVGPU\"       \
             \n nvgpu_hevc:    \"$VIDEO_ENC_NVGPU_HEVC\"  \
+            \n null:          \"Completely skip video\"  \
             \n"
         fi
         exit
@@ -565,6 +566,7 @@ done
         echo "                    to grab the framebuffer and pass frames to vaapi encoder."
         echo "                    You've to run 'setcap cap_sys_admin+ep $(which ffmpeg)' on the server to use zerocopy."
         echo "                    --display, --follow are ignored when using zerocopy."
+        echo "                    \"null\" disables video grabbing completely"
         echo "                    specify \"show\" to print the options for each preset."
         echo ""
         echo "    --zerocopy-device zerocopy encoding only: specify the dri device to use."
@@ -699,6 +701,11 @@ sleep 0.1 #(just to not shuffle output messages)
 PID1=$!
 
 echo
+
+if [ "$VIDEOENC" = "null" ] ; then 
+    DISPLAY="null" ; RES="null" ; OFFSET="null"
+fi
+
 print_pending "Trying to connect to $RUSER@$RHOST:$RPORT"
 echo "     and stream display $DISPLAY"
 echo "     with size $RES and offset: $OFFSET"
@@ -707,33 +714,6 @@ echo
 #Play a test tone to open the pulseaudio sinc prior to recording it to (avoid audio delays at start!?)    #This hangs at exit, so we'll kill it by name.
     $SSH_EXEC "$FFPLAYEXE -loglevel warning -nostats -nodisp -f lavfi -i \"sine=220:4\" -af volume=0.001 -autoexit" &
     PID5=$!
-
-
-#Guess audio capture device?
-    if [ "$AUDIO_CAPTURE_SOURCE" = "AUTO" ] ; then
-        print_pending "Guessing audio capture device"
-        AUDIO_CAPTURE_SOURCE=$($SSH_EXEC echo '$(pactl list sources short|grep monitor|awk "{print \$2}" | head -n 1)')
-        # or: AUDIO_CAPTURE_SOURCE=$($SSH_EXEC echo '$(pacmd list-sources | grep "<.*monitor>" |awk -F "[<>]" "{print \$2}" | tail -n 1)')
-        print_warning "Guessed audio capture source: $AUDIO_CAPTURE_SOURCE"
-        echo
-    fi
-#
-    if [ "$AUDIO_CAPTURE_SOURCE" = "ALL" ] ; then
-        print_pending "Guessing ALL audio capture devices"
-        AUDIO_CAPTURE_SOURCE=$($SSH_EXEC echo '$(pactl list sources short|awk "{print \$2}")')
-        # or: AUDIO_CAPTURE_SOURCE=$($SSH_EXEC echo '$(pacmd list-sources | grep "name\: <.*>" |awk -F "[<>]" "{print \$2}")')
-        print_warning "Guessed following audio capture sources: $AUDIO_CAPTURE_SOURCE"
-        echo
-    fi
-
-#Auto video grab size?
-    if [ "$RES" = "AUTO" ] || [ "$RES" = "" ] ; then
-        print_pending "Guessing remote resolution"
-        RES=$($SSH_EXEC "export DISPLAY=$RDISPLAY ; xdpyinfo | awk '/dimensions:/ { print \$2; exit }'")
-#         print_warning "Auto grab resolution: $RES"
-        echo
-    fi
-
 
 
 #Select video encoder:
@@ -756,6 +736,8 @@ echo
             VIDEO_ENC="$VIDEO_ENC_INTELGPU" ;;
         zerocopy)
             VIDEO_ENC="" ;;
+        null)
+            VIDEO_ENC="null" ;;
         *)
             print_error "Unsupported video encoder"
             exit ;;
@@ -776,12 +758,35 @@ echo
             exit ;;
     esac 
 
-#Insert the scale filter by replacing the dummy filters null,null.
-    if [ ! "$PRESCALE" = "" ] ; then
-        VIDEO_ENC=$(sed "s/null,null/scale=$PRESCALE/" <<< "$VIDEO_ENC")
+#Grab Audio
+
+#Guess audio capture device?
+
+    if [ "$AUDIO_CAPTURE_SOURCE" = "AUTO" ]  && [ "$AUDIO_ENC" != "null" ] ; then
+        print_pending "Guessing audio capture device"
+        AUDIO_CAPTURE_SOURCE=$($SSH_EXEC echo '$(pactl list sources short|grep monitor|awk "{print \$2}" | head -n 1)')
+        # or: AUDIO_CAPTURE_SOURCE=$($SSH_EXEC echo '$(pacmd list-sources | grep "<.*monitor>" |awk -F "[<>]" "{print \$2}" | tail -n 1)')
+        print_warning "Guessed audio capture source: $AUDIO_CAPTURE_SOURCE"
+        echo
     fi
 
-#Grab Audio
+    if [ "$AUDIO_CAPTURE_SOURCE" = "ALL" ] && [ "$AUDIO_ENC" != "null" ] ; then
+        print_pending "Guessing ALL audio capture devices"
+        AUDIO_CAPTURE_SOURCE=$($SSH_EXEC echo '$(pactl list sources short|awk "{print \$2}")')
+        # or: AUDIO_CAPTURE_SOURCE=$($SSH_EXEC echo '$(pacmd list-sources | grep "name\: <.*>" |awk -F "[<>]" "{print \$2}")')
+        print_warning "Guessed following audio capture sources: $AUDIO_CAPTURE_SOURCE"
+        echo
+    fi
+
+#Auto video grab size?
+    if [ "$RES" = "AUTO" ] || [ "$RES" = "" ] && [ "$VIDEO_ENC" != "null" ]  ; then
+        print_pending "Guessing remote resolution"
+        RES=$($SSH_EXEC "export DISPLAY=$RDISPLAY ; xdpyinfo | awk '/dimensions:/ { print \$2; exit }'")
+#         print_warning "Auto grab resolution: $RES"
+        echo
+    fi
+
+
     if ! [ "$AUDIO_ENC" = "null" ] ; then
         print_pending "Start audio streaming..."
 
@@ -805,21 +810,32 @@ echo
     fi
 
 #Grab Video
+
+    if [ "$VIDEO_ENC" = "null" ] ; then
+        /usr/bin/sleep inf
+        exit
+    fi
+
+    #Insert the scale filter by replacing the dummy filters null,null.
+    if [ ! "$PRESCALE" = "" ] ; then
+        VIDEO_ENC=$(sed "s/null,null/scale=$PRESCALE/" <<< "$VIDEO_ENC")
+    fi
+
     print_pending "Start video streaming..."
 
     #$SSH_EXEC sh -c "\
     #    export DISPLAY=$RDISPLAY ;\
     #    $FFMPEGEXE -nostdin -loglevel warning -y -f x11grab -framerate $FPS -video_size $RES -i "$RDISPLAY""$OFFSET" -sws_flags $SCALE_FLT -b:v #"$VIDEO_BITRATE_MAX"k  -maxrate "$VIDEO_BITRATE_MAX"k \
     #    "$VIDEO_ENC" -f_strict experimental -syncpoints none -f nut -\
-    #" | $VIDEOPLAYER
-
+    #" | $VIDEOPLAYER    
+    
     if [ ! "$VIDEOENC" = "zerocopy" ] ; then
         $SSH_EXEC sh -c "\
-            export DISPLAY=$RDISPLAY ;\
-            export VAAPI_DISABLE_INTERLACE=1;\
-            $FFMPEGEXE -nostdin -loglevel warning -y -f x11grab "$FOLLOW_STRING" -framerate $FPS -video_size $RES -i "$RDISPLAY""$OFFSET" -sws_flags $SCALE_FLT -b:v "$VIDEO_BITRATE_MAX"k  -maxrate "$VIDEO_BITRATE_MAX"k \
-            "$VIDEO_ENC" -f_strict experimental -syncpoints none -f nut -\
-        " | $VIDEOPLAYER
+                export DISPLAY=$RDISPLAY ;\
+                export VAAPI_DISABLE_INTERLACE=1;\
+                $FFMPEGEXE -nostdin -loglevel warning -y -f x11grab "$FOLLOW_STRING" -framerate $FPS -video_size $RES -i "$RDISPLAY""$OFFSET" -sws_flags $SCALE_FLT -b:v "$VIDEO_BITRATE_MAX"k  -maxrate "$VIDEO_BITRATE_MAX"k \
+                "$VIDEO_ENC" -f_strict experimental -syncpoints none -f nut -\
+            " | $VIDEOPLAYER
     else
         #Zero copy test:
         RES=$(sed "s/\x/\:/" <<< "$RES")
