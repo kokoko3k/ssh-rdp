@@ -833,7 +833,7 @@ echo
         AUDIO_SOURCE_GRAB_STRING="$AUDIO_SOURCE_GRAB_STRING -filter_complex amix=inputs=$(echo $AUDIO_CAPTURE_SOURCE|wc -w)"
 
         $SSH_EXEC sh -c "\
-            export DISPLAY=$RDISPLAY ;\
+            export DISPLAY=$RDISPLAY ; export PULSE_LATENCY_MSEC=$RPA_LATENCY_MSEC ;\
             $FFMPEGEXE -v quiet -nostdin -loglevel warning -y "$AUDIO_SOURCE_GRAB_STRING"   -b:a "$AUDIO_BITRATE"k "$AUDIO_ENC" -f nut -\
         " | $AUDIOPLAYER &
         PID4=$!
