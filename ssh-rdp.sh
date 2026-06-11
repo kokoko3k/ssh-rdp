@@ -599,7 +599,7 @@ done
         echo ""
         echo "    --mpv-audiobuffer  mpv audioplayer only: Set the internal mpv audio buffer (try around 0.1 or lower; affects audio latency)"
         echo ""
-        echo "    --pafragment       ffplay audioplayer only: Specify the remote fragment size to grab audio; affects audio latency."
+        echo "    --pafragment       Specify the remote fragment size to grab audio; affects audio latency."
         echo "                       use -1 to let ffmpeg use its default value"
         echo "                       if the option is unused, a default value of 1024 will be used"
         echo ""
