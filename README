@@ -45,7 +45,8 @@ Usage:
 
 Caveats:
     * Due to network problems, sometimes the audio could be desyncronized,
-      it will recover by itself by speeding up, and could hear high-pitched sound.
+      ffmpeg will recover by itself by speeding up, and could hear high-pitched sound.
+      2026, june: A new option has been added to use mpv as audio player, behaviour may vary.
     * Just clicking in the remote window does not pass the control to it, 
       because that is the player, so hitting the choosed hotkey is mandatory.
 

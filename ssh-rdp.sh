@@ -418,6 +418,7 @@ fi
 #Parse arguments
 while [[ $# -gt 0 ]]
 do
+    #echo "ARG: [$1]"   # debug
     arg="$1"
     case $arg in
         -u|--user)
@@ -453,6 +454,12 @@ do
         --pasource)
             AUDIO_CAPTURE_SOURCE="$2"
             shift ; shift ;;
+        --mpv-audioplayer)
+            SELECT_AUDIOPLAYER_MPV="1"
+            shift ;;
+        --mpv-audiobuffer)
+            MPV_AUDIOPLAYER_BUFFER_SET="$2"
+            shift ; shift ;;
         --pafragment)
             PA_CAPTURE_FRAGMENT="$2"
             shift ; shift ;;
@@ -476,9 +483,6 @@ do
             shift ; shift ;;
         --customa)
             AUDIO_ENC_CUSTOM="$2"
-            shift ; shift ;;
-        --audioenc)
-            AUDIOENC="$2"
             shift ; shift ;;
         #--videoplayer)
         #    VIDEOPLAYER="$2"
@@ -527,9 +531,23 @@ done
         AUDIO_LATENCY_HACK="-af aresample=async=1:min_comp=0.1:first_pts=$AUDIOLATENCYHACK"
     fi
 
-    AUDIOPLAYER="ffplay - -nostats -loglevel warning -flags low_delay -nodisp -probesize 32 -fflags nobuffer+fastseek+flush_packets -analyzeduration 0 -sync ext $AUDIO_LATENCY_HACK"
+    
+    if [ "$MPV_AUDIOPLAYER_BUFFER_SET" != "" ] ; then
+        MPV_AUDIOPLAYER_BUFFER="--audio-buffer=$MPV_AUDIOPLAYER_BUFFER_SET"
+    fi
+    
+    AUDIOPLAYER_MPV="mpv --input-terminal=no --no-cache --cache-pause=no --demuxer-readahead-secs=0 --demuxer-lavf-probesize=32 --demuxer-lavf-analyzeduration=0 --demuxer-lavf-o=flags=low_delay --demuxer-lavf-o=fflags=nobuffer+fastseek+flush_packets $MPV_AUDIOPLAYER_BUFFER -quiet - "
+    
+    AUDIOPLAYER_FFPLAY="ffplay - -nostats -loglevel warning -flags low_delay -nodisp -probesize 32 -fflags nobuffer+fastseek+flush_packets -analyzeduration 0 -sync ext $AUDIO_LATENCY_HACK"        
     
     
+    if [ "$SELECT_AUDIOPLAYER_MPV" == "1" ] ; then
+        AUDIOPLAYER="$AUDIOPLAYER_MPV"
+    else
+        AUDIOPLAYER="$AUDIOPLAYER_FFPLAY"
+    fi
+
+
     if [ "$AUDIOENC" = "show" ] || [ "$VIDEOENC" = "show" ] ; then
         if [ "$AUDIOENC" = "show" ] ; then
             print_pending "Audio encoding presets: \
@@ -562,61 +580,65 @@ done
         echo ""
         echo "Use $me inputconfig to create or change the input config file"
         echo ""
-        echo "-s, --server        Remote host to connect to"
-        echo "-u, --user          ssh username"
-        echo "-p, --port          ssh port"
-        echo "    --sshopt        pass additional ssh option (omit -o)"
-        echo "-d, --display       Remote display (eg: 0.0)"
-        echo "-r, --resolution    Grab size (eg: 1920x1080) or AUTO"
-        echo "-o, --offset        Grab offset (eg: +1920,0)"
-        echo "    --follow        pan the grabbed area when the cursor reaches the border"
-        echo "    --prescale      Scale video before encoding (eg: 1280x720)."
-        echo "                    Has impact on remote cpu use and can increase latency too."
-        echo "-f, --fps           Grabbed frames per second"
-        echo "    --pasource      Capture from the specified pulseaudio source. (experimental and may introduce delay)"
-        echo "                    Use AUTO to guess, use ALL to capture everything."
-        echo "                    Eg: alsa_output.pci-0000_00_1b.0.analog-stereo.monitor"
+        echo "-s, --server           Remote host to connect to"
+        echo "-u, --user             ssh username"
+        echo "-p, --port             ssh port"
+        echo "    --sshopt           pass additional ssh option (omit -o)"
+        echo "-d, --display          Remote display (eg: 0.0)"
+        echo "-r, --resolution       Grab size (eg: 1920x1080) or AUTO"
+        echo "-o, --offset           Grab offset (eg: +1920,0)"
+        echo "    --follow           pan the grabbed area when the cursor reaches the border"
+        echo "    --prescale         Scale video before encoding (eg: 1280x720)."
+        echo "                       Has impact on remote cpu use and can increase latency too."
+        echo "-f, --fps              Grabbed frames per second"
+        echo "    --pasource         Capture from the specified pulseaudio source. (experimental and may introduce delay)"
+        echo "                       Use AUTO to guess, use ALL to capture everything."
+        echo "                       Eg: alsa_output.pci-0000_00_1b.0.analog-stereo.monitor"
         echo ""
-        echo "    --pafragment    Specify the remote fragment size to grab audio; affects audio latency."
-        echo "                    use -1 to let ffmpeg use its default value"
-        echo "                    if the option is unused, a default value of 1024 will be used"
+        echo "    --mpv-audioplayer  Use mpv to play audio instead of ffplay"
         echo ""
-        echo "    --alatencyhack  Alters timestamps to lower audio latency."
-        echo "                    The higher the value, the lower the audio delay."
-        echo "                    Setting this too high will likely produce crackling sound try in range 0-8000 (4000 is a good start)"
-        echo "                    Requires a VERY stable connection"
+        echo "    --mpv-audiobuffer  mpv audioplayer only: Set the internal mpv audio buffer (try around 0.1 or lower; affects audio latency)"
         echo ""
-        echo "    --palatencymsec Set PULSE_LATENCY_MSEC on the remote side prior to capturing audio."
-        echo "                    This pulseaudio environment variable alters the capture latency but may have"
-        echo "                    unpredictable results; if values of 20..60 gives big latencies, try 1."
+        echo "    --pafragment       ffplay audioplayer only: Specify the remote fragment size to grab audio; affects audio latency."
+        echo "                       use -1 to let ffmpeg use its default value"
+        echo "                       if the option is unused, a default value of 1024 will be used"
         echo ""
-        echo "    --videoenc      Video encoder can be: cpu,cpurgb,amdgpu,amdgpu_hevc,intelgpu,nvgpu,nvgpu_hevc,zerocopy,custom or show"
-        echo "                    \"zerocopy\" is experimental and causes ffmpeg to use kmsgrab"
-        echo "                    to grab the framebuffer and pass frames to vaapi encoder."
-        echo "                    You've to run 'setcap cap_sys_admin+ep $(which ffmpeg)' on the server to use zerocopy."
-        echo "                    --display, --follow are ignored when using zerocopy."
-        echo "                    \"null\" disables video grabbing completely"
-        echo "                    specify \"show\" to print the options for each preset."
+        echo "    --alatencyhack     ffplay audioplayer only: Alters timestamps to lower audio latency."
+        echo "                       The higher the value, the lower the audio delay."
+        echo "                       Setting this too high will likely produce crackling sound try in range 0-8000 (4000 is a good start)"
+        echo "                       Requires a VERY stable connection"
+        echo ""
+        echo "    --palatencymsec    Set PULSE_LATENCY_MSEC on the remote side prior to capturing audio."
+        echo "                       This pulseaudio environment variable alters the capture latency but may have"
+        echo "                       unpredictable results; if values of 20..60 gives big latencies, try 1."
+        echo ""
+        echo "    --videoenc         Video encoder can be: cpu,cpurgb,amdgpu,amdgpu_hevc,intelgpu,nvgpu,nvgpu_hevc,zerocopy,custom or show"
+        echo "                       \"zerocopy\" is experimental and causes ffmpeg to use kmsgrab"
+        echo "                       to grab the framebuffer and pass frames to vaapi encoder."
+        echo "                       You've to run 'setcap cap_sys_admin+ep $(which ffmpeg)' on the server to use zerocopy."
+        echo "                       --display, --follow are ignored when using zerocopy."
+        echo "                       \"null\" disables video grabbing completely"
+        echo "                       specify \"show\" to print the options for each preset."
         echo ""
         echo "    --zerocopy-device  zerocopy encoding only: specify the dri device to use."
         echo "                       Default is /dev/dri/card0"
         echo ""
-        echo "    --customv       Specify a string for video encoder stuff when videoenc is set to custom"
-        echo "                    Eg: \"-threads 1 -c:v h264_nvenc -preset llhq -delay 0 -zerolatency 1\""
-        echo "    --audioenc      Audio encoder can be: opus,pcm,null,custom or show"
-        echo "                    \"null\" disables audio grabbing completely"
-        echo "                    specify \"show\" to print the options for each other preset."
+        echo "    --customv          Specify a string for video encoder stuff when videoenc is set to custom"
+        echo "                       Eg: \"-threads 1 -c:v h264_nvenc -preset llhq -delay 0 -zerolatency 1\""
+        echo "    --audioenc         Audio encoder can be: opus,pcm,null,custom or show"
+        echo "                       \"null\" disables audio grabbing completely"
+        echo "                       specify \"show\" to print the options for each other preset."
         echo ""
-        echo "    --customa       Specify a string for audio encoder stuff when videoenc is set to custom"
-        echo "                    Eg: \"-acodec libopus -vbr off -application lowdelay\""
-        echo "-v, --vbitrate      Video bitrate in kbps or AUTO"
-        echo "                    AUTO will use 80% of the maximum available throughput."
-        echo "-a, --abitrate      Audio bitrate in kbps"
-        echo "    --vplayeropts   Additional options to pass to videoplayer"
-        echo "                    Eg: \"--video-output-levels=limited --video-rotate=90\""
-        echo "    --rexec-before  Execute the specified script on the remote host via 'sh' just before the connection"
-        echo "    --rexec-exit    Execute the specified script on the remote host via 'sh' before exiting the script"
-        echo "    --rexec-late    Execute the specified script on the remote host via 'sh' after input(s) forward, before video grab"
+        echo "    --customa          Specify a string for audio encoder stuff when videoenc is set to custom"
+        echo "                      Eg: \"-acodec libopus -vbr off -application lowdelay\""
+        echo "-v, --vbitrate         Video bitrate in kbps or AUTO"
+        echo "                       AUTO will use 80% of the maximum available throughput."
+        echo "-a, --abitrate         Audio bitrate in kbps"
+        echo "    --vplayeropts      Additional options to pass to videoplayer"
+        echo "                       Eg: \"--video-output-levels=limited --video-rotate=90\""
+        echo "    --rexec-before     Execute the specified script on the remote host via 'sh' just before the connection"
+        echo "    --rexec-exit       Execute the specified script on the remote host via 'sh' before exiting the script"
+        echo "    --rexec-late       Execute the specified script on the remote host via 'sh' after input(s) forward, before video grab"
         #echo "    --videoplayer
         echo
         echo "Example 1: john connecting to jserver, all defaults accepted"
