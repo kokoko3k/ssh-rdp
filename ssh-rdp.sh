@@ -490,6 +490,9 @@ do
         --vplayeropts)
             VPLAYEROPTS="$2"
             shift ; shift ;;
+        --aplayeroptsmpv)
+            APLAYEROPTSMPV="$2"
+            shift ; shift ;;
         -v|--vbitrate)
             VIDEO_BITRATE_MAX="$2"
             shift ; shift ;;
@@ -529,6 +532,7 @@ done
 
     if [ "$AUDIOLATENCYHACK" != "" ] ; then
         AUDIO_LATENCY_HACK="-af aresample=async=1:min_comp=0.1:first_pts=$AUDIOLATENCYHACK"
+        MPV_AUDIO_LATENCY_HACK="--af-add=aresample=async=1:min_comp=0.1:first_pts=$AUDIOLATENCYHACK"
     fi
 
     
@@ -536,7 +540,7 @@ done
         MPV_AUDIOPLAYER_BUFFER="--audio-buffer=$MPV_AUDIOPLAYER_BUFFER_SET"
     fi
     
-    AUDIOPLAYER_MPV="mpv --input-terminal=no --no-cache --cache-pause=no --demuxer-readahead-secs=0 --demuxer-lavf-probesize=32 --demuxer-lavf-analyzeduration=0 --demuxer-lavf-o=flags=low_delay --demuxer-lavf-o=fflags=nobuffer+fastseek+flush_packets $MPV_AUDIOPLAYER_BUFFER -quiet - "
+    AUDIOPLAYER_MPV="mpv --input-terminal=no --no-cache --cache-pause=no --demuxer-readahead-secs=0 --demuxer-lavf-probesize=32 --demuxer-lavf-analyzeduration=0 --demuxer-lavf-o=flags=low_delay --demuxer-lavf-o=fflags=nobuffer+fastseek+flush_packets $MPV_AUDIO_LATENCY_HACK $MPV_AUDIOPLAYER_BUFFER $APLAYEROPTSMPV  -"
     
     AUDIOPLAYER_FFPLAY="ffplay - -nostats -loglevel warning -flags low_delay -nodisp -probesize 32 -fflags nobuffer+fastseek+flush_packets -analyzeduration 0 -sync ext $AUDIO_LATENCY_HACK"        
     
@@ -603,10 +607,13 @@ done
         echo "                       use -1 to let ffmpeg use its default value"
         echo "                       if the option is unused, a default value of 1024 will be used"
         echo ""
-        echo "    --alatencyhack     ffplay audioplayer only: Alters timestamps to lower audio latency."
+        echo "    --alatencyhack     (ffplay and mpv)"
+        echo "                       Alters timestamps to lower audio latency."
         echo "                       The higher the value, the lower the audio delay."
-        echo "                       Setting this too high will likely produce crackling sound try in range 0-8000 (4000 is a good start)"
-        echo "                       Requires a VERY stable connection"
+        echo "                       ffplay: Setting this too high will likely produce crackling sound "
+        echo "                               try in range 0-8000 (4000 is a good start)"
+        echo "                               May requires a VERY stable connection"
+        echo "                       mpv: It seems to be smarter and handles (much) higher values just fine."
         echo ""
         echo "    --palatencymsec    Set PULSE_LATENCY_MSEC on the remote side prior to capturing audio."
         echo "                       This pulseaudio environment variable alters the capture latency but may have"
@@ -636,6 +643,8 @@ done
         echo "-a, --abitrate         Audio bitrate in kbps"
         echo "    --vplayeropts      Additional options to pass to videoplayer"
         echo "                       Eg: \"--video-output-levels=limited --video-rotate=90\""
+        echo "    --aplayeroptsmpv   Additional options to pass to mpv audioplayer"
+        echo "                       Eg: \"--speed=0.01 --af-add=scaletempo\""
         echo "    --rexec-before     Execute the specified script on the remote host via 'sh' just before the connection"
         echo "    --rexec-exit       Execute the specified script on the remote host via 'sh' before exiting the script"
         echo "    --rexec-late       Execute the specified script on the remote host via 'sh' after input(s) forward, before video grab"
