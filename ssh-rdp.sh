@@ -540,7 +540,7 @@ done
         MPV_AUDIOPLAYER_BUFFER="--audio-buffer=$MPV_AUDIOPLAYER_BUFFER_SET"
     fi
     
-    AUDIOPLAYER_MPV="mpv --input-terminal=no --no-cache --cache-pause=no --demuxer-readahead-secs=0 --demuxer-lavf-probesize=32 --demuxer-lavf-analyzeduration=0 --demuxer-lavf-o=flags=low_delay --demuxer-lavf-o=fflags=nobuffer+fastseek+flush_packets $MPV_AUDIO_LATENCY_HACK $MPV_AUDIOPLAYER_BUFFER $APLAYEROPTSMPV  -"
+    AUDIOPLAYER_MPV="mpv --quiet --input-terminal=no --no-cache --cache-pause=no --demuxer-readahead-secs=0 --demuxer-lavf-probesize=32 --demuxer-lavf-analyzeduration=0 --demuxer-lavf-o=flags=low_delay --demuxer-lavf-o=fflags=nobuffer+fastseek+flush_packets $MPV_AUDIO_LATENCY_HACK $MPV_AUDIOPLAYER_BUFFER $APLAYEROPTSMPV  -"
     
     AUDIOPLAYER_FFPLAY="ffplay - -nostats -loglevel warning -flags low_delay -nodisp -probesize 32 -fflags nobuffer+fastseek+flush_packets -analyzeduration 0 -sync ext $AUDIO_LATENCY_HACK"        
     
