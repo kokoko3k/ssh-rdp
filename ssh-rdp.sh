@@ -518,20 +518,18 @@ done
 
 # Decoding
     #ffplay, low latency, no hardware decoding
-        #VIDEOPLAYER="ffplay -  -vf "setpts=0.5*PTS" -nostats -window_title "$WTITLE" -probesize 32 -flags low_delay -framedrop  -fflags nobuffer+fastseek+flush_packets -analyzeduration 0 -sync ext"
+        #VIDEOPLAYER="ffplay -  -vf "setpts=0.5*PTS" -nostats -window_title "$WTITLE" -probesize 32 -flags low_delay -framedrop  -fflags fastseek+flush_packets -analyzeduration 0 -sync ext"
 
     #mpv, less latency, possibly hardware decoding, may hammer the cpu.
         #Untimed:
-            #VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=auto --title="$WTITLE" --untimed --no-cache --profile=low-latency --opengl-glfinish=yes --vulkan-swap-mode=immediate --swapchain-depth=1 --opengl-swapinterval=0"
+            #VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --title="$WTITLE" --untimed --no-cache --profile=low-latency --opengl-glfinish=yes --vulkan-swap-mode=immediate --swapchain-depth=1 --opengl-swapinterval=0"
 
         #speed=2 instead of untimed, seems smoother:
-            VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=auto --title="$WTITLE" --speed=2 --no-cache --profile=low-latency --opengl-glfinish=yes --opengl-swapinterval=0 --vulkan-swap-mode=immediate --swapchain-depth=1 $VPLAYEROPTS"
+            VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --title="$WTITLE" --speed=2 --no-cache --profile=low-latency --opengl-glfinish=yes --opengl-swapinterval=0 --vulkan-swap-mode=immediate --swapchain-depth=1 $VPLAYEROPTS"
 
         #less hammering, experimental, introduce some stuttering :/
-            #VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=auto --title="$WTITLE" --speed=2 --no-cache --profile=low-latency --opengl-glfinish=yes --opengl-swapinterval=0 --vulkan-swap-mode=immediate --swapchain-depth=1 --cache-pause=yes --cache-pause-wait=0.001"
+            #VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --title="$WTITLE" --speed=2 --no-cache --profile=low-latency --opengl-glfinish=yes --opengl-swapinterval=0 --vulkan-swap-mode=immediate --swapchain-depth=1 --cache-pause=yes --cache-pause-wait=0.001"
 
-        #older mpv versions, vaapi
-            #VIDEOPLAYER="taskset -c 0 mpv - --input-cursor=no --input-vo-keyboard=no --input-default-bindings=no --hwdec=vaapi --vo=gpu --gpu-api=opengl --title="$WTITLE" --untimed --no-cache --audio-buffer=0  --vd-lavc-threads=1 --cache-pause=no --demuxer-lavf-o=fflags=+nobuffer --demuxer-lavf-analyzeduration=0.1 --video-sync=audio --interpolation=no  --opengl-glfinish=yes --opengl-swapinterval=0"
 
     if [ "$AUDIOLATENCYHACK" != "" ] ; then
         AUDIO_LATENCY_HACK="-af aresample=async=1:min_comp=0.1:first_pts=$AUDIOLATENCYHACK"
@@ -660,8 +658,9 @@ done
         echo "Example 2:"
         echo "    john connecting to jserver on ssh port 322, streaming the display 0.0"
         echo "    remote setup is dual head and john selects the right monitor."
-        echo "    Stream will be 128kbps for audio and 10000kbps for video:"
-        echo "    Ex: $me -u john -s jserver -p 322 -d 0.0 -r 1920x1080 -o +1920,0 -f 60 -a 128 -v 10000"
+        echo "    Stream will be 128kbps for audio and 10000kbps for video."
+        echo "    Try to use local hardware decoding:"
+        echo "    Ex: $me -u john -s jserver -p 322 -d 0.0 -r 1920x1080 -o +1920,0 -f 60 -a 128 -v 10000 --vplayeropts \"--hwdec=auto\""
         echo
         echo "Example 3:"
         echo "    Bill connecting to jserver on ssh port 322, streaming the display 0.0"
