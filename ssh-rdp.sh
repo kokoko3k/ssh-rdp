@@ -34,8 +34,8 @@
     #VIDEO_ENC_CPU="-threads 1 -vcodec libx264 -thread_type slice -slices 1 -level 32 -preset ultrafast -tune zerolatency -intra-refresh 1 -x264opts vbv-bufsize=1:slice-max-size=1500:keyint=$FPS:sliced_threads=1 -pix_fmt nv12 -vf 'null,null'"
     VIDEO_ENC_CPU="-threads 1 -vcodec libx264 -thread_type slice -slices 1 -level 32 -preset ultrafast -tune zerolatency -intra-refresh 1 -x264opts keyint=$FPS:sliced_threads=1 -pix_fmt nv12 -vf 'null,null'"
     VIDEO_ENC_CPU_RGB="-threads 1 -vcodec libx264rgb -profile:v high444 -thread_type slice -slices 1 -level 32 -preset ultrafast -tune zerolatency -intra-refresh 1 -x264opts keyint=$FPS:sliced_threads=1 -pix_fmt bgr24 -vf 'null,null'"
-    VIDEO_ENC_NVGPU="-threads 1 -c:v h264_nvenc -preset llhq -delay 0 -zerolatency 1 -vf 'null,null'"
-    VIDEO_ENC_NVGPU_HEVC="-threads 1 -c:v hevc_nvenc -preset llhq -delay 0 -zerolatency 1 -vf 'null,null'"
+         VIDEO_ENC_NVGPU="-threads 1 -c:v h264_nvenc -preset p5 -tune ull -delay 0 -zerolatency 1 -vf 'null,null'"
+    VIDEO_ENC_NVGPU_HEVC="-threads 1 -c:v hevc_nvenc -preset p5 -tune ull -delay 0 -zerolatency 1 -vf 'null,null'"
     VIDEO_ENC_AMDGPU="-threads 1 -vaapi_device /dev/dri/renderD128 -c:v h264_vaapi -bf 0 -vf 'null,null,hwupload,scale_vaapi=format=nv12'"
     VIDEO_ENC_AMDGPU_HEVC="-threads 1 -vaapi_device /dev/dri/renderD128 -c:v hevc_vaapi -bf 0 -vf 'null,null,hwupload,scale_vaapi=format=nv12'"
     VIDEO_ENC_INTELGPU="-threads 1 -vaapi_device /dev/dri/renderD128 -c:v h264_vaapi -bf 0 -vf 'null,null,hwupload,scale_vaapi=format=nv12'"
@@ -508,6 +508,9 @@ do
         --rexec-late)
             REXEC_LATE="$2"
             shift ; shift ;;
+        --ffmpeg-exe)
+            FFMPEG_USE_EXE="$2"
+            shift ; shift ;;
         *)
             shift ;;
     esac
@@ -622,7 +625,7 @@ done
         echo "    --videoenc         Video encoder can be: cpu,cpurgb,amdgpu,amdgpu_hevc,intelgpu,nvgpu,nvgpu_hevc,zerocopy,custom or show"
         echo "                       \"zerocopy\" is experimental and causes ffmpeg to use kmsgrab"
         echo "                       to grab the framebuffer and pass frames to vaapi encoder."
-        echo "                       You've to run 'setcap cap_sys_admin+ep $(which ffmpeg)' on the server to use zerocopy."
+        echo "                       You've to run 'setcap cap_sys_admin+ep /path/to/ffmpeg' on the server to use zerocopy."
         echo "                       --display, --follow are ignored when using zerocopy."
         echo "                       \"null\" disables video grabbing completely"
         echo "                       specify \"show\" to print the options for each preset."
@@ -648,7 +651,8 @@ done
         echo "    --rexec-before     Execute the specified script on the remote host via 'sh' just before the connection"
         echo "    --rexec-exit       Execute the specified script on the remote host via 'sh' before exiting the script"
         echo "    --rexec-late       Execute the specified script on the remote host via 'sh' after input(s) forward, before video grab"
-        #echo "    --videoplayer
+        echo ""
+        echo "    --ffmpeg-exe       Specify an alternative remote full path to the remote ffmpeg executable"
         echo
         echo "Example 1: john connecting to jserver, all defaults accepted"
         echo "    "$me" --user john --server jserver"
@@ -728,7 +732,11 @@ generate_ICFILE_from_names
 
 #We need to kill some processes on exit, do it by name.
     FFMPEGEXE=/tmp/ffmpeg$$
-    $SSH_EXEC "ln -s \$(which ffmpeg) $FFMPEGEXE"
+    if [ -n "$FFMPEG_USE_EXE" ]; then
+        $SSH_EXEC "ln -s $FFMPEG_USE_EXE $FFMPEGEXE"
+    else
+        $SSH_EXEC "ln -s \$(which ffmpeg) $FFMPEGEXE"
+    fi
     FFPLAYEXE=/tmp/ffplay$$
     $SSH_EXEC "ln -s \$(which ffplay) $FFPLAYEXE"
 
