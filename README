@@ -45,8 +45,10 @@ Usage:
 
 Caveats:
     * Due to network problems, sometimes the audio could be desyncronized,
-      ffmpeg will recover by itself by speeding up, and could hear high-pitched sound.
+      ffplay will recover by itself by speeding up, and could hear high-pitched sound.
       2026, june: A new option has been added to use mpv as audio player, behaviour may vary.
+    * An alternative way to "recover" from audio lag over time is to use the provided dynacache.lua
+      mpv script (see example via ssh-rdp.sh and inspect the lua script itself for further configuration)
     * Just clicking in the remote window does not pass the control to it, 
       because that is the player, so hitting the choosed hotkey is mandatory.
 
@@ -115,5 +117,6 @@ Egon connecting to jserver on ssh port 322, streaming the display 0.0
     Egon wants untouched audio, 144fps and encode via intelgpu, he needs to correct video output levels
     Ex: ssh-rdp.sh -u spengler -s jserver -p 322 -d 0.0 -f 144 -v 80000 --audioenc pcm --videoenc intelgpu --vplayeropts "--video-output-levels=limited"
       
+See other examples with ssh-rdp.sh -h
      
 I'm open to suggestions to make this software better!

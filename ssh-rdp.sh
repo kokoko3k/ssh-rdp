@@ -660,17 +660,24 @@ done
         echo "    remote setup is dual head and john selects the right monitor."
         echo "    Stream will be 128kbps for audio and 10000kbps for video."
         echo "    Try to use local hardware decoding:"
-        echo "    Ex: $me -u john -s jserver -p 322 -d 0.0 -r 1920x1080 -o +1920,0 -f 60 -a 128 -v 10000 --vplayeropts \"--hwdec=auto\""
+        echo "    $me -u john -s jserver -p 322 -d 0.0 -r 1920x1080 -o +1920,0 -f 60 -a 128 -v 10000 --vplayeropts \"--hwdec=auto\""
         echo
         echo "Example 3:"
         echo "    Bill connecting to bserver on ssh port 322, streaming the display 0.0"
         echo "    Stream will be 128kbps for audio and 10000kbps for video:"
         echo "    Bill wants untouched audio, 144fps and encode via intelgpu, he needs to correct video output levels"
-        echo "    Ex: $me -u bill -s bserver -p 322 -d 0.0 -f 144 -v 80000 --audioenc pcm --videoenc intelgpu --vplayeropts \"--video-output-levels=limited\""
+        echo "    $me -u bill -s bserver -p 322 -d 0.0 -f 144 -v 80000 --audioenc pcm --videoenc intelgpu --vplayeropts \"--video-output-levels=limited\""
         echo
         echo "Example 4:"
         echo "    Bill connecting to bserver, but wants to use a remote local build of ffmpeg to transcode."
-        echo "    Ex: $me -u bill -s bserver --ffmpeg-exe \"/home/bill/.local/bin/ffmpeg\""
+        echo "    $me -u bill -s bserver --ffmpeg-exe \"/home/bill/.local/bin/ffmpeg\""
+        echo  
+        echo "Example 5:"
+        echo "    Bill connecting to bserver wants to stream audio at very low latency via mpv."
+        echo "    It passes extra options to it to lower the output audio buffer and enabling"
+        echo "    the provided lua script to keep a small input cache via variable playback speed."
+        echo "    mpv verbosity is increased on purpose to se what's happening."
+        echo "    $me -u bill -s bserver --mpv-audioplayer --mpv audiobuffer 30/1000 --aplayeroptsmpv \"--script=/path/to/ssh-rdp-install-dir/dynacache.lua --msg-level=all=v\""
         echo  
         
         
