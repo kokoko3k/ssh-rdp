@@ -22,7 +22,7 @@ local READAHEAD_SECS = 10
 -- Try to keep the following readahead buffer
 -- 1500 is good for per 2ch pcm, 800 is good for a 128kbps opus stream.
 -- If you hear dropouts, try to increase this value.
-local BUFFER_TARGET = 1500
+local BUFFER_TARGET = 1100
 
 -- K is a factor that expresses how aggressive is the adaption speed.
 -- There should be no need to make it high, as the adaption speed

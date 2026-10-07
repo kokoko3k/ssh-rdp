@@ -70,10 +70,16 @@
     #WTITLE="$RUSER@$RHOST""$RDISPLAY"
     WTITLE="ssh-rdp""-"\["$$"\]
 
+#By default, start a remote ffplay instance to open the remote audio device
+#and keep it open.
+    KEEP_AUDIO_OPEN="1"
+    
 # Misc
     SSH_CIPHER="" #Optionally, force an ssh cipher to be used
     #SSH_CIPHER="aes256-gcm@openssh.com"
 
+
+    
 
 # ### User config ends here ### #
 
@@ -460,6 +466,9 @@ do
         --mpv-audiobuffer)
             MPV_AUDIOPLAYER_BUFFER_SET="$2"
             shift ; shift ;;
+        --no-keepopenaudio)
+            KEEP_AUDIO_OPEN="0"
+            shift ;;
         --pafragment)
             PA_CAPTURE_FRAGMENT="$2"
             shift ; shift ;;
@@ -602,8 +611,11 @@ done
         echo ""
         echo "    --mpv-audioplayer  Use mpv to play audio instead of ffplay"
         echo ""
-        echo "    --mpv-audiobuffer  mpv audioplayer only: Set the internal mpv audio buffer (try around 0.1 or lower; affects audio latency)"
+        echo "    --mpv-audiobuffer  mpv audioplayer: Set the internal mpv audio buffer (try around 0.1 or lower; affects audio latency)"
         echo ""
+        echo "    --no-keepopenaudio This script starts a remote ffplay proces playing a very low volume tone to keep the audio device"
+        echo "                       open. This may help with latency in some circumstances. Use this option to disable the feature."
+        echo 
         echo "    --pafragment       Specify the remote fragment size to grab audio; affects audio latency."
         echo "                       use -1 to let ffmpeg use its default value"
         echo "                       if the option is unused, a default value of 1024 will be used"
@@ -646,12 +658,12 @@ done
         echo "                       Eg: \"--video-output-levels=limited --video-rotate=90\""
         echo "    --aplayeroptsmpv   Additional options to pass to mpv audioplayer"
         echo "                       Eg: \"--speed=0.01 --af-add=scaletempo\""
+        echo "    --ffmpeg-exe       Specify an alternative remote full path to the remote ffmpeg executable"
+        echo
         echo "    --rexec-before     Execute the specified script on the remote host via 'sh' just before the connection"
         echo "    --rexec-exit       Execute the specified script on the remote host via 'sh' before exiting the script"
         echo "    --rexec-late       Execute the specified script on the remote host via 'sh' after input(s) forward, before video grab"
-        echo ""
-        echo "    --ffmpeg-exe       Specify an alternative remote full path to the remote ffmpeg executable"
-        echo
+        echo 
         echo "Example 1: john connecting to jserver, all defaults accepted"
         echo "    "$me" --user john --server jserver"
         echo
@@ -792,8 +804,10 @@ echo "     with size $RES and offset: $OFFSET"
 echo
 
 #Play a test tone to open the pulseaudio sinc prior to recording it to (avoid audio delays at start!?)    #This hangs at exit, so we'll kill it by name.
-    $SSH_EXEC "$FFPLAYEXE -loglevel warning -nostats -nodisp -f lavfi -i \"sine=220:4\" -af volume=0.001 -autoexit" &
-    PID5=$!
+    if [ "$KEEP_AUDIO_OPEN" == "1" ] ; then
+        $SSH_EXEC "$FFPLAYEXE -loglevel warning -nostats -nodisp -f lavfi -i \"sine=220:4\" -af volume=0.001 -autoexit" &
+        PID5=$!
+    fi;
 
 
 #Select video encoder:
