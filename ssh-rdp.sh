@@ -663,11 +663,17 @@ done
         echo "    Ex: $me -u john -s jserver -p 322 -d 0.0 -r 1920x1080 -o +1920,0 -f 60 -a 128 -v 10000 --vplayeropts \"--hwdec=auto\""
         echo
         echo "Example 3:"
-        echo "    Bill connecting to jserver on ssh port 322, streaming the display 0.0"
+        echo "    Bill connecting to bserver on ssh port 322, streaming the display 0.0"
         echo "    Stream will be 128kbps for audio and 10000kbps for video:"
         echo "    Bill wants untouched audio, 144fps and encode via intelgpu, he needs to correct video output levels"
         echo "    Ex: $me -u bill -s bserver -p 322 -d 0.0 -f 144 -v 80000 --audioenc pcm --videoenc intelgpu --vplayeropts \"--video-output-levels=limited\""
         echo
+        echo "Example 4:"
+        echo "    Bill connecting to bserver, but wants to use a remote local build of ffmpeg to transcode."
+        echo "    Ex: $me -u bill -s bserver --ffmpeg-exe \"/home/bill/.local/bin/ffmpeg\""
+        echo  
+        
+        
         echo "user and host are mandatory."
         echo "default ssh-port: $RPORT"
         echo "default DISPLAY : $RDISPLAY"
